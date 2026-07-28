@@ -20,9 +20,9 @@ class EpisodeScene(Scene):
 
     def construct(self):
         self.setup_phase()
-        self.wait(1)
+        self.clear_board()  # 超级规则〇：Setup 结束清板
         self.derivation_phase()
-        self.wait(1)
+        self.clear_board()  # Derivation 结束清板
         self.conclusion_phase()
         self.wait(1)
 
@@ -143,20 +143,20 @@ class EpisodeScene(Scene):
     # ------------------------------------------------------------------
     def derivation_phase(self):
         # [KP-2][KP-3]
-        # 旧标题离场，新步骤标题活跃
-        self.play(FadeOut(self._title))
-        self.wait(0.5)
-
+        # 清板后重建上下文（勿依赖 Setup 残留 mobject）
         step = Text("Derivation: secant → tangent", font_size=48, color=WHITE)
         step.to_edge(UP)
         self.play(Write(step))
         self.wait(0.6)
 
-        # 定义式转背景态，作为上下文
-        self.play(self._definition.animate.set_opacity(0.3).scale(0.85).to_corner(UL))
-        self.wait(0.6)
-        self.play(self._condition.animate.set_opacity(0.0))
-        self.wait(0.4)
+        ctx = MathTex(
+            r"f'(a)=\lim_{\Delta x \to 0}\frac{f(a+\Delta x)-f(a)}{\Delta x}",
+            font_size=28,
+            color=GREY,
+        )
+        ctx.to_corner(UL).set_opacity(0.35)
+        self.play(FadeIn(ctx))
+        self.wait(0.45)
 
         # 坐标系与曲线（相对布局）
         axes = Axes(
@@ -295,37 +295,21 @@ class EpisodeScene(Scene):
         self.play(Indicate(result))
         self.wait(0.7)
 
-        self._axes = axes
-        self._graph = graph
-        self._point_group = point_group
-        self._tangent = tangent
-        self._result = result
-        self._lim_expr = lim_expr
-        self._step = step
+        # 本阶段局部对象在 clear_board 时离场；Conclusion 自包含重建
 
     # ------------------------------------------------------------------
-    # Conclusion — 切线方程
+    # Conclusion — 切线方程（清板后自包含，不依赖上一阶段引用）
     # ------------------------------------------------------------------
     def conclusion_phase(self):
         # [KP-4]
-        self.play(FadeOut(self._step))
-        self.wait(0.5)
-        self.play(FadeOut(self._lim_expr))
-        self.wait(0.4)
-
-        # 图形转背景，给公式让出焦点
-        self.play(self._axes.animate.set_opacity(0.25))
-        self.wait(0.4)
-        self.play(self._graph.animate.set_opacity(0.25))
-        self.wait(0.4)
-        self.play(self._point_group.animate.set_opacity(0.35))
-        self.wait(0.4)
-        self.play(self._tangent.animate.set_color(YELLOW))
-        self.wait(0.5)
-
         concl = Text("Conclusion", font_size=52, color=YELLOW)
         concl.to_edge(UP)
         self.play(Write(concl))
+        self.wait(0.55)
+
+        result = MathTex(r"f'(a)=m_{\mathrm{tan}}", font_size=40, color=WHITE)
+        result.next_to(concl, DOWN, buff=0.45)
+        self.play(Write(result))
         self.wait(0.55)
 
         # 切线方程分步（原子化）
@@ -335,7 +319,7 @@ class EpisodeScene(Scene):
         eq.next_to(left, RIGHT, buff=0.25)
         right.next_to(eq, RIGHT, buff=0.25)
         line = VGroup(left, eq, right)
-        line.next_to(concl, DOWN, buff=0.55)
+        line.next_to(result, DOWN, buff=0.55)
 
         self.play(Write(left))
         self.wait(0.5)
@@ -357,6 +341,5 @@ class EpisodeScene(Scene):
         self.play(FadeIn(meaning))
         self.wait(1.0)
 
-        # 与结果式做匹配强调（几何意义）
-        self.play(Indicate(self._result))
+        self.play(Indicate(result))
         self.wait(0.8)

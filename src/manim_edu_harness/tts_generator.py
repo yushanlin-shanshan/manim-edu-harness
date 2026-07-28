@@ -82,10 +82,9 @@ class VolcengineTTS:
         audio_blobs: list[bytes] = []
         for chunk in chunks:
             audio_blobs.append(self._request_speech(chunk))
-        raw = b"".join(audio_blobs)
-        if not raw:
+        if not audio_blobs:
             raise TTSError("Volcengine TTS returned empty audio")
-        _write_audio_bytes(raw, out)
+        _write_concatenated_audio(audio_blobs, out)
         return out.is_file() and out.stat().st_size > 44
 
     def _request_speech(self, text: str) -> bytes:
@@ -222,8 +221,9 @@ class ZhipuTTS:
         out.parent.mkdir(parents=True, exist_ok=True)
         chunks = _chunk_text(cleaned, self.max_chars)
         blobs = [self._request_speech(c) for c in chunks]
-        raw = b"".join(blobs)
-        _write_audio_bytes(raw, out)
+        if not blobs:
+            return False
+        _write_concatenated_audio(blobs, out)
         return out.is_file() and out.stat().st_size > 44
 
     def _request_speech(self, text: str) -> bytes:
@@ -345,6 +345,68 @@ def _write_audio_bytes(raw: bytes, out: Path) -> None:
         mp3_out.write_bytes(raw)
         # Also copy as wav path if conversion failed — leave mp3 for add_sound fallback
         out.write_bytes(raw)
+
+
+def _write_concatenated_audio(blobs: list[bytes], out: Path) -> None:
+    """Convert each provider chunk to wav, then concatenate PCM frames.
+
+    Never byte-join MP3 streams — that produces corrupt multi-chunk narration.
+    """
+    if len(blobs) == 1:
+        _write_audio_bytes(blobs[0], out)
+        return
+
+    with tempfile.TemporaryDirectory(prefix="tts_join_") as tmp:
+        wav_parts: list[Path] = []
+        for i, raw in enumerate(blobs):
+            if not raw:
+                continue
+            part = Path(tmp) / f"part_{i}.wav"
+            _write_audio_bytes(raw, part)
+            if not part.is_file() or part.stat().st_size <= 44:
+                raise TTSError(f"TTS chunk {i} failed to materialize as wav")
+            if part.read_bytes()[:4] != b"RIFF":
+                raise TTSError(
+                    f"TTS chunk {i} is not WAV after conversion "
+                    "(install ffmpeg for mp3→wav)"
+                )
+            wav_parts.append(part)
+        if not wav_parts:
+            raise TTSError("Volcengine TTS returned empty audio")
+        _concat_wav_files(wav_parts, out)
+
+
+def _concat_wav_files(paths: list[Path], out: Path) -> None:
+    """Append same-format PCM WAV files into one output."""
+    if len(paths) == 1:
+        out.write_bytes(paths[0].read_bytes())
+        return
+
+    params = None
+    frames: list[bytes] = []
+    for p in paths:
+        with wave.open(str(p), "rb") as wf:
+            cur = wf.getparams()
+            if params is None:
+                params = cur
+            else:
+                if (
+                    cur.nchannels != params.nchannels
+                    or cur.sampwidth != params.sampwidth
+                    or cur.framerate != params.framerate
+                ):
+                    raise TTSError(
+                        "TTS wav chunks have mismatched format; "
+                        "cannot concatenate safely"
+                    )
+            frames.append(wf.readframes(wf.getnframes()))
+
+    assert params is not None
+    out.parent.mkdir(parents=True, exist_ok=True)
+    with wave.open(str(out), "wb") as wf:
+        wf.setparams(params)
+        for block in frames:
+            wf.writeframes(block)
 
 
 def _which(cmd: str) -> str | None:
