@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import ast
 import json
 import re
 from pathlib import Path
@@ -34,6 +35,21 @@ def _write_scenes_from_coder(text: str, candidate: Path) -> list[str]:
         path.write_text(body.strip() + "\n", encoding="utf-8")
         written.append(name)
     return written
+
+
+def _scene_syntax_errors(candidate: Path) -> list[str]:
+    errors: list[str] = []
+    scenes = candidate / "scenes"
+    if not scenes.is_dir():
+        return ["missing scenes/"]
+    for path in sorted(scenes.glob("*.py")):
+        if path.name == "__init__.py":
+            continue
+        try:
+            ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
+        except SyntaxError as exc:
+            errors.append(f"{path.name}:{exc.lineno}: {exc.msg}")
+    return errors
 
 
 class AgentPipeline:
@@ -89,15 +105,8 @@ class AgentPipeline:
         (self.candidate / "SCRIPT.md").write_text(script.strip() + "\n", encoding="utf-8")
         return script
 
-    def run_coder(self, plan: dict[str, Any], script: str) -> list[str]:
+    def _coder_once(self, user: str) -> list[str]:
         system = load_prompt("coder")
-        user = (
-            "根据规划与剧本，生成可运行的 ManimCommunity (manim) 场景代码。"
-            "只输出 Python 代码块；主场景类名建议 EpisodeScene。\n\n"
-            f"REQUEST:\n{json.dumps(self.request, ensure_ascii=False, indent=2)}\n\n"
-            f"PLAN:\n{json.dumps(plan, ensure_ascii=False, indent=2)}\n\n"
-            f"SCRIPT:\n{script}"
-        )
         code_text = self.client.chat(
             [
                 {"role": "system", "content": system},
@@ -106,6 +115,38 @@ class AgentPipeline:
         )
         (self.candidate / "CODER_RAW.md").write_text(code_text, encoding="utf-8")
         return _write_scenes_from_coder(code_text, self.candidate)
+
+    def _ensure_parseable(self, scenes: list[str], *, retries: int = 2) -> list[str]:
+        for _ in range(retries):
+            errs = _scene_syntax_errors(self.candidate)
+            if not errs:
+                return scenes
+            blobs = []
+            for name in scenes:
+                path = self.candidate / "scenes" / name
+                if path.is_file():
+                    blobs.append(f"### {name}\n```python\n{path.read_text(encoding='utf-8')}\n```")
+            user = (
+                "上一次代码有 Python 语法错误，请输出完整可解析的替换模块（仅 python 代码块）。\n"
+                "不要使用 scipy；numpy 也尽量避免；只用 manim 标准对象。\n\n"
+                f"SYNTAX_ERRORS:\n{json.dumps(errs, ensure_ascii=False)}\n\n"
+                + "\n\n".join(blobs)
+            )
+            scenes = self._coder_once(user)
+        return scenes
+
+    def run_coder(self, plan: dict[str, Any], script: str) -> list[str]:
+        user = (
+            "根据规划与剧本，生成可运行的 ManimCommunity (manim) 场景代码。"
+            "只输出 Python 代码块；主场景类名建议 EpisodeScene。"
+            "约束：禁止 scipy；尽量不用 numpy；场景控制在约 120 行内；中文用 Text；"
+            "公式优先 Text 降级，避免未闭合引号。\n\n"
+            f"REQUEST:\n{json.dumps(self.request, ensure_ascii=False, indent=2)}\n\n"
+            f"PLAN:\n{json.dumps(plan, ensure_ascii=False, indent=2)}\n\n"
+            f"SCRIPT:\n{script}"
+        )
+        scenes = self._coder_once(user)
+        return self._ensure_parseable(scenes)
 
     def run_reviewer(
         self,
@@ -140,7 +181,6 @@ class AgentPipeline:
         return audit
 
     def run_fix(self, audit: dict[str, Any], plan: dict[str, Any], script: str) -> list[str]:
-        system = load_prompt("coder")
         guidance = audit.get("fix_guidance") or "修复审查指出的全部 blockers 与 majors。"
         existing = []
         for path in sorted((self.candidate / "scenes").glob("*.py")):
@@ -148,18 +188,13 @@ class AgentPipeline:
                 continue
             existing.append(f"### {path.name}\n```python\n{path.read_text(encoding='utf-8')}\n```")
         user = (
-            "这是 FIX 轮。根据审查意见重写 Manim 代码。只输出完整 Python 代码块。\n\n"
+            "这是 FIX 轮。根据审查意见重写 Manim 代码。只输出完整 Python 代码块。"
+            "禁止 scipy；尽量不用 numpy；保证 ast.parse 通过。\n\n"
             f"FIX_GUIDANCE:\n{guidance}\n\n"
             f"AUDIT:\n{json.dumps(audit, ensure_ascii=False, indent=2)}\n\n"
             f"PLAN:\n{json.dumps(plan, ensure_ascii=False, indent=2)}\n\n"
             f"SCRIPT:\n{script}\n\n"
             + "\n\n".join(existing)
         )
-        code_text = self.client.chat(
-            [
-                {"role": "system", "content": system},
-                {"role": "user", "content": user},
-            ]
-        )
-        (self.candidate / "CODER_RAW.md").write_text(code_text, encoding="utf-8")
-        return _write_scenes_from_coder(code_text, self.candidate)
+        scenes = self._coder_once(user)
+        return self._ensure_parseable(scenes)

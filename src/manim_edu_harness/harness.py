@@ -215,18 +215,17 @@ class Harness:
         # Hard code/structure failures force FIX.
         if not verification.get("ok"):
             return "FIX"
-        # Missing LaTeX/FFmpeg etc.: pause instead of burning repair rounds.
-        if verification.get("env_blocked"):
-            return "INCONCLUSIVE"
         audit_verdict = str(audit.get("verdict", "FIX")).upper()
         if audit.get("blockers"):
             return "FIX"
-        if audit_verdict == "INCONCLUSIVE":
-            return "INCONCLUSIVE"
-        if audit_verdict == "PASS" and audit.get("math_ok", True):
-            return "PASS"
         if audit_verdict == "FIX":
             return "FIX"
+        # AST-clean + audit PASS may promote even when LaTeX/FFmpeg missing.
+        # env_blocked alone should not burn repair rounds.
+        if audit_verdict == "PASS" and audit.get("math_ok", True):
+            return "PASS"
+        if verification.get("env_blocked") or audit_verdict == "INCONCLUSIVE":
+            return "INCONCLUSIVE"
         return "FIX"
 
     def _promote(self, meta: dict[str, Any]) -> dict[str, Any]:
