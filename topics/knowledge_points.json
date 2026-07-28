@@ -1,0 +1,73 @@
+{
+  "version": 1,
+  "knowledge_points": [
+    {
+      "id": "kp-derivative",
+      "title": "导数的几何意义：切线斜率",
+      "topic": "导数的几何意义：切线斜率",
+      "major": "数学 / 微积分",
+      "audience": "高中 / 大一",
+      "language": "zh-CN"
+    },
+    {
+      "id": "kp-newton",
+      "title": "牛顿第二定律 F=ma",
+      "topic": "牛顿第二定律 F=ma：力、质量与加速度",
+      "major": "物理 / 力学",
+      "audience": "高中",
+      "language": "zh-CN"
+    },
+    {
+      "id": "kp-activation",
+      "title": "化学反应速率与活化能",
+      "topic": "化学反应速率与活化能（定性）",
+      "major": "化学",
+      "audience": "高中",
+      "language": "zh-CN"
+    },
+    {
+      "id": "kp-bayes",
+      "title": "贝叶斯定理",
+      "topic": "贝叶斯定理：先验、似然与后验",
+      "major": "统计 / 概率",
+      "audience": "大学低年级",
+      "language": "zh-CN"
+    },
+    {
+      "id": "kp-maxwell",
+      "title": "变化电场产生磁场",
+      "topic": "麦克斯韦方程组直觉：变化的电场如何产生磁场",
+      "major": "物理 / 电磁学",
+      "audience": "大学",
+      "language": "zh-CN",
+      "must_teach": [
+        "Ampere-Maxwell：变化电场产生磁场",
+        "不要讲成法拉第电磁感应"
+      ]
+    },
+    {
+      "id": "kp-clt",
+      "title": "中心极限定理",
+      "topic": "中心极限定理：为何样本均值趋近正态",
+      "major": "统计",
+      "audience": "大学",
+      "language": "zh-CN"
+    },
+    {
+      "id": "kp-dna",
+      "title": "DNA 碱基互补配对",
+      "topic": "DNA 双螺旋与碱基互补配对",
+      "major": "生物",
+      "audience": "高中",
+      "language": "zh-CN"
+    },
+    {
+      "id": "kp-gd",
+      "title": "梯度下降直觉",
+      "topic": "梯度下降：损失函数上的下山直觉",
+      "major": "计算机 / 机器学习入门",
+      "audience": "大学",
+      "language": "zh-CN"
+    }
+  ]
+}

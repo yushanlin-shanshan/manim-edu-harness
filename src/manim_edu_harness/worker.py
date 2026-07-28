@@ -1,0 +1,90 @@
+"""Worker module — generate short-drama Manim candidate artifacts."""
+
+from __future__ import annotations
+
+import json
+from pathlib import Path
+from typing import Any
+
+from .agents.pipeline import AgentPipeline
+from .fsutil import write_json
+from .glm_client import GLMClient
+from .textutil import sanitize_text
+
+
+def _normalize_kp(kp: dict[str, Any]) -> dict[str, Any]:
+    """Map knowledge-point schema → pipeline request."""
+    topic = kp.get("topic") or kp.get("title") or kp.get("name") or "untitled"
+    req = {
+        "topic": topic,
+        "title": kp.get("title") or topic,
+        "major": kp.get("major") or kp.get("subject") or "",
+        "audience": kp.get("audience") or "高中/大学低年级",
+        "language": kp.get("language") or "zh-CN",
+        "format": kp.get("format") or "理科知识点短剧",
+    }
+    for key in ("constraints", "must_teach", "id"):
+        if key in kp:
+            req[key] = kp[key]
+    return req
+
+
+def worker_generate(
+    kp: dict[str, Any],
+    candidate: Path,
+    glm: GLMClient,
+    *,
+    fix_feedback: str | None = None,
+) -> dict[str, Any]:
+    """Generate PLAN/SCRIPT/scenes into candidate/. Returns WORKER_RESULT dict."""
+    candidate = Path(candidate)
+    candidate.mkdir(parents=True, exist_ok=True)
+    request = _normalize_kp(kp)
+    pipe = AgentPipeline(glm, candidate, request)
+
+    plan_path = candidate / "PLAN.json"
+    script_path = candidate / "SCRIPT.md"
+    if fix_feedback and plan_path.is_file() and script_path.is_file():
+        plan = json.loads(plan_path.read_text(encoding="utf-8"))
+        script = script_path.read_text(encoding="utf-8")
+        (candidate / "FIX_FEEDBACK.md").write_text(
+            sanitize_text(fix_feedback) + "\n", encoding="utf-8"
+        )
+        audit = {
+            "verdict": "FIX",
+            "fix_guidance": fix_feedback,
+            "blockers": [fix_feedback],
+        }
+        scenes = pipe.run_fix(audit, plan, script)
+    else:
+        plan = pipe.run_planner()
+        script = pipe.run_writer(plan)
+        scenes = pipe.run_coder(plan, script)
+
+    episode = {
+        "title": plan.get("title") or request.get("title") or request.get("topic"),
+        "topic": request.get("topic"),
+        "major": request.get("major"),
+        "learning_objectives": plan.get("learning_objectives", []),
+        "scenes": scenes,
+    }
+    write_json(candidate / "EPISODE.json", episode)
+
+    # Prompt 03 expects scene.py convenience alias when episode.py exists.
+    episode_py = candidate / "scenes" / "episode.py"
+    if episode_py.is_file():
+        alias = candidate / "scene.py"
+        alias.write_text(episode_py.read_text(encoding="utf-8"), encoding="utf-8")
+
+    result = {
+        "ok": True,
+        "claims": [
+            f"Generated short-drama for topic={request.get('topic')}",
+            f"Manim modules: {', '.join(scenes)}",
+        ],
+        "scenes": scenes,
+        "episode": episode,
+        "fixed": bool(fix_feedback),
+    }
+    write_json(candidate / "WORKER_RESULT.json", result)
+    return result

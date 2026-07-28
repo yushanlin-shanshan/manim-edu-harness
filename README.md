@@ -37,7 +37,23 @@ python harness_control.py status
 python harness_control.py batch --limit 2
 ```
 
+## Batch orchestrator (Prompt 03)
+
+```bash
+export PYTHONPATH=src
+# Dry-run (Mock GLM, no API / no Manim)
+python batch_harness.py --input topics/mock_one.json --limit 1 --dry-run
+
+# Real batch
+python batch_harness.py --input topics/knowledge_points.json --output workspace/delivered --limit 3
+python batch_harness.py --input topics/knowledge_points.json --start 3 --limit 2   # resume
+```
+
+Reports: `workspace/FINAL_REPORT.json` + `FINAL_REPORT.md` (secrets sanitized).  
+PASS deliveries: `workspace/delivered/<slug>/`.
+
 Outputs land in `workspace/` only after **PASS**. Failed runs keep `runs/<id>/candidate/` for diagnosis.
+
 
 Successful episodes are also archived under `workspace/library/<run_id>/` (with `catalog.json` and optional `videos/EpisodeScene.mp4`) so batch runs do not overwrite prior deliveries.
 

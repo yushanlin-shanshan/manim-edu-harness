@@ -5,12 +5,20 @@
   "timeout_seconds": 5400,
   "verification_timeout_seconds": 900,
   "review_protocol_version": 2,
+  "glm": {
+    "model": "glm-4-plus",
+    "temperature": 0.4,
+    "max_tokens": 8192
+  },
   "zhipu": {
     "model": "glm-4-plus",
     "base_url_env": "ZHIPU_BASE_URL",
     "api_key_env": "ZHIPU_API_KEY",
     "temperature": 0.4,
     "max_tokens": 8192
+  },
+  "render": {
+    "quality": "l"
   },
   "pipeline": {
     "agents": ["planner", "writer", "coder", "reviewer"],
@@ -42,6 +50,6 @@
   },
   "batch": {
     "concurrency": 1,
-    "topics_file": "topics/seed_stem.json"
+    "topics_file": "topics/knowledge_points.json"
   }
 }

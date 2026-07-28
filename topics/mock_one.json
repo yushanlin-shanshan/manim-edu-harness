@@ -1,0 +1,12 @@
+{
+  "knowledge_points": [
+    {
+      "id": "mock-1",
+      "title": "Mock Dry-Run Knowledge Point",
+      "topic": "Mock Dry-Run Knowledge Point",
+      "major": "test",
+      "audience": "dev",
+      "language": "zh-CN"
+    }
+  ]
+}
