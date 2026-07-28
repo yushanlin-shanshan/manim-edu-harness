@@ -1,0 +1,30 @@
+{
+  "knowledge_points": [
+    {
+      "id": "kp-clt",
+      "title": "中心极限定理",
+      "topic": "中心极限定理：样本均值的标准化极限分布",
+      "major": "统计",
+      "audience": "大学",
+      "language": "zh-CN",
+      "key_points": [
+        "条件：X_i iid，E[X_i]=μ，Var=σ²<∞",
+        "定义 X̄_n=(X_1+…+X_n)/n",
+        "定理：Z_n=√n(X̄_n-μ)/σ → N(0,1)（n→∞）",
+        "分步写出 Z_n 定义式：左 Z_n → = → 右 √n(X̄-μ)/σ",
+        "结论意义：均值抽样分布近似标准正态"
+      ],
+      "must_teach": [
+        "严格按 条件→定义X̄→写出Z_n→结论",
+        "禁止套话；同屏≤4；每步 FadeOut；公式严禁一次写完",
+        "不要画过多直方图柱子挤在一起"
+      ],
+      "constraints": [
+        "只用 Text/几何，禁止 MathTex/Tex/scipy/numpy",
+        "同屏核心对象≤4，新式前必须 FadeOut",
+        "Z_n 公式必须分三步 Write",
+        "约 100 行以内"
+      ]
+    }
+  ]
+}

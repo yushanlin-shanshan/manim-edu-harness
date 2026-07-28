@@ -1,5 +1,5 @@
 {
-  "version": 1,
+  "version": 2,
   "knowledge_points": [
     {
       "id": "kp-derivative",
@@ -7,7 +7,13 @@
       "topic": "导数的几何意义：切线斜率",
       "major": "数学 / 微积分",
       "audience": "高中 / 大一",
-      "language": "zh-CN"
+      "language": "zh-CN",
+      "key_points": [
+        "定义：f'(a)=lim_{h→0}[f(a+h)-f(a)]/h（极限存在时）",
+        "几何意义：f'(a) 是曲线在 x=a 处切线斜率",
+        "割线斜率 → 切线斜率必须分步极限展示",
+        "切线方程：y-f(a)=f'(a)(x-a)"
+      ]
     },
     {
       "id": "kp-newton",
@@ -15,7 +21,13 @@
       "topic": "牛顿第二定律 F=ma：力、质量与加速度",
       "major": "物理 / 力学",
       "audience": "高中",
-      "language": "zh-CN"
+      "language": "zh-CN",
+      "key_points": [
+        "定义：合外力 F_net = m a（矢量式）",
+        "a = F_net / m：同力下质量越大加速度越小",
+        "必须区分质量 m 与重量 mg",
+        "结论：加速度方向与合外力方向相同"
+      ]
     },
     {
       "id": "kp-activation",
@@ -23,7 +35,13 @@
       "topic": "化学反应速率与活化能（定性）",
       "major": "化学",
       "audience": "高中",
-      "language": "zh-CN"
+      "language": "zh-CN",
+      "key_points": [
+        "活化能 Ea：反应物到过渡态所需最低能量",
+        "有效碰撞：取向合适且能量 ≥ Ea",
+        "Ea 越低，同温下反应速率通常越快",
+        "催化剂通过提供更低 Ea 路径加速反应（不改变 ΔH）"
+      ]
     },
     {
       "id": "kp-bayes",
@@ -31,7 +49,13 @@
       "topic": "贝叶斯定理：先验、似然与后验",
       "major": "统计 / 概率",
       "audience": "大学低年级",
-      "language": "zh-CN"
+      "language": "zh-CN",
+      "key_points": [
+        "定义：P(H|D)=P(D|H)P(H)/P(D)",
+        "先验 P(H)、似然 P(D|H)、后验 P(H|D)",
+        "证据 P(D) 可按全概率展开",
+        "结论：数据通过似然更新先验得到后验"
+      ]
     },
     {
       "id": "kp-maxwell",
@@ -40,8 +64,14 @@
       "major": "物理 / 电磁学",
       "audience": "大学",
       "language": "zh-CN",
+      "key_points": [
+        "Ampere-Maxwell：∇×B = μ₀J + μ₀ε₀∂E/∂t",
+        "位移电流项：变化电场产生磁场（curl B ~ ∂E/∂t）",
+        "电容器充电：板间 E 增大伴随环绕 B",
+        "严禁讲成法拉第（变化 B 产生 E）"
+      ],
       "must_teach": [
-        "Ampere-Maxwell：变化电场产生磁场",
+        "只讲变化电场产生磁场",
         "不要讲成法拉第电磁感应"
       ]
     },
@@ -51,7 +81,13 @@
       "topic": "中心极限定理：为何样本均值趋近正态",
       "major": "统计",
       "audience": "大学",
-      "language": "zh-CN"
+      "language": "zh-CN",
+      "key_points": [
+        "设 X_i iid，E[X_i]=μ，Var(X_i)=σ²<∞",
+        "样本均值 X̄_n = (X_1+...+X_n)/n",
+        "结论：√n(X̄_n-μ)/σ → N(0,1)（n→∞）",
+        "意义：总体非正态时，均值分布仍可近似正态"
+      ]
     },
     {
       "id": "kp-dna",
@@ -59,7 +95,13 @@
       "topic": "DNA 双螺旋与碱基互补配对",
       "major": "生物",
       "audience": "高中",
-      "language": "zh-CN"
+      "language": "zh-CN",
+      "key_points": [
+        "双螺旋：两条反向平行链，碱基在内侧",
+        "配对规则：A—T（2 氢键），G—C（3 氢键）",
+        "嘌呤配嘧啶，维持螺旋直径稳定",
+        "复制意义：一条链可决定互补链序列"
+      ]
     },
     {
       "id": "kp-gd",
@@ -67,7 +109,13 @@
       "topic": "梯度下降：损失函数上的下山直觉",
       "major": "计算机 / 机器学习入门",
       "audience": "大学",
-      "language": "zh-CN"
+      "language": "zh-CN",
+      "key_points": [
+        "目标：最小化损失 L(θ)",
+        "梯度 ∇L 指向上升最快方向，故沿 -∇L 更新",
+        "更新式：θ ← θ - η ∇L(θ)",
+        "η 过大可能发散，过小收敛慢"
+      ]
     }
   ]
 }
