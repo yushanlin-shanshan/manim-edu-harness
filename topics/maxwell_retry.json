@@ -1,0 +1,23 @@
+{
+  "knowledge_points": [
+    {
+      "id": "kp-maxwell",
+      "title": "变化电场产生磁场",
+      "topic": "麦克斯韦方程组直觉：变化的电场如何产生磁场（位移电流）",
+      "major": "物理 / 电磁学",
+      "audience": "大学",
+      "language": "zh-CN",
+      "must_teach": [
+        "只讲 Ampere-Maxwell：变化的电场产生磁场 / curl B ~ dE/dt",
+        "严禁讲成法拉第：变化磁场产生电场",
+        "用 Text 写 curl B ~ dE/dt，不要 MathTex",
+        "用电容器充电动画：板间 E 增大 → 环绕 B"
+      ],
+      "constraints": [
+        "只用 Text/几何，禁止 MathTex/Tex/scipy/numpy",
+        "颜色只用 RED/BLUE/GREEN/YELLOW/ORANGE/PURPLE/PINK/WHITE/BLACK/GRAY/TEAL/GOLD",
+        "约80行，物理概念必须正确"
+      ]
+    }
+  ]
+}

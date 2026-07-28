@@ -8,9 +8,9 @@ import re
 from pathlib import Path
 from typing import Any
 
-from ..fsutil import write_json
+from ..fsutil import project_root, write_json
 from ..zhipu_client import ZhipuClient
-from . import load_prompt
+from . import load_prompt, role_system_prompt
 
 
 def _extract_code_blocks(text: str) -> list[tuple[str, str]]:
@@ -104,9 +104,11 @@ class AgentPipeline:
         return plan
 
     def run_writer(self, plan: dict[str, Any]) -> str:
-        system = load_prompt("writer")
+        system = role_system_prompt("writer")
         user = (
-            "根据规划写完整短剧剧本（Markdown）。要求对白自然、知识点准确、适合中学生/大学低年级。\n\n"
+            "根据规划写完整剧本（Markdown）。必须硬核干货、紧凑逻辑："
+            "定义→条件→分步推导→结论；禁止套话；每句服务 key_points/must_teach。\n"
+            "每个 beat 写明 FadeOut 对象与同屏≤4；公式板书必须分步。\n\n"
             f"REQUEST:\n{json.dumps(self.request, ensure_ascii=False, indent=2)}\n\n"
             f"PLAN:\n{json.dumps(plan, ensure_ascii=False, indent=2)}"
         )
@@ -120,7 +122,7 @@ class AgentPipeline:
         return script
 
     def _coder_once(self, user: str) -> list[str]:
-        system = load_prompt("coder")
+        system = role_system_prompt("coder")
         code_text = self.client.chat(
             [
                 {"role": "system", "content": system},
@@ -150,14 +152,22 @@ class AgentPipeline:
         return scenes
 
     def run_coder(self, plan: dict[str, Any], script: str) -> list[str]:
+        template_hint = ""
+        template_path = project_root() / "prompts" / "math_scene_template.py"
+        if template_path.is_file():
+            # Keep prompt bounded: only the construct body patterns matter.
+            template_hint = (
+                "\n\nREFERENCE_TEMPLATE (follow stepwise Write + FadeOut patterns):\n"
+                f"```python\n{template_path.read_text(encoding='utf-8')[:3500]}\n```\n"
+            )
         user = (
-            "根据规划与剧本，生成可运行的 ManimCommunity (manim) 场景代码。"
-            "只输出 Python 代码块；主场景类名建议 EpisodeScene。"
-            "约束：禁止 scipy；尽量不用 numpy；场景控制在约 120 行内；中文用 Text；"
-            "公式优先 Text 降级，避免未闭合引号。\n\n"
+            "根据规划与剧本生成 ManimCommunity 场景代码。只输出 Python 代码块；类名 EpisodeScene。\n"
+            "强制：同屏≤4；新式前 FadeOut 旧元素；公式左→=→右分步 Write，禁止一次写完长公式；"
+            "禁止 scipy/numpy；约 80–160 行。\n\n"
             f"REQUEST:\n{json.dumps(self.request, ensure_ascii=False, indent=2)}\n\n"
             f"PLAN:\n{json.dumps(plan, ensure_ascii=False, indent=2)}\n\n"
             f"SCRIPT:\n{script}"
+            f"{template_hint}"
         )
         scenes = self._coder_once(user)
         return self._ensure_parseable(scenes)
