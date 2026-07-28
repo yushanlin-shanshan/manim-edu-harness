@@ -12,6 +12,7 @@ Requires LaTeX (MathTex). Render:
 """
 
 from manim import *
+import os
 
 
 class EpisodeScene(Scene):
@@ -24,6 +25,64 @@ class EpisodeScene(Scene):
         self.wait(1)
         self.conclusion_phase()
         self.wait(1)
+
+        # >>> 强制加载音频 (不要删!) <<<
+        # 放在动画末尾；内部用 time_offset 钉到 t=0，保证一开播就有声
+        self.load_and_play_narration()
+        self.pad_to_narration_length()
+
+    def load_and_play_narration(self):
+        """自动加载同目录 narration.wav 并挂到时间线起点。禁止删除。"""
+        import wave
+
+        self._narration_duration = 0.0
+        audio_file = "narration.wav"
+        if not os.path.exists(audio_file):
+            print(f"⚠️ [Audio] File not found: {audio_file}")
+            return
+
+        with wave.open(audio_file, "rb") as wf:
+            self._narration_duration = wf.getnframes() / float(wf.getframerate())
+
+        # 缓存回放后 skip_animations 可能仍为 True，会导致 add_sound 静默跳过
+        was_skip = getattr(self.renderer, "skip_animations", False)
+        self.renderer.skip_animations = False
+        try:
+            # 末尾调用：用负偏移钉到 t=0，保证一开播就有声
+            offset = -float(self.time)
+            self.add_sound(audio_file, time_offset=offset)
+        finally:
+            self.renderer.skip_animations = was_skip
+
+        print(f"✅ [Audio] Loaded: {audio_file} (t0 via offset={offset:.3f})")
+
+    def pad_to_narration_length(self):
+        """画面短于旁白时补 wait，误差目标 < 3s。"""
+        extra = getattr(self, "_narration_duration", 0.0) - self.time
+        if extra > 0.05:
+            self.wait(extra)
+
+    def safe_move(self, mobj, target_point):
+        """防止对象移出画面边界。如果目标坐标超出安全区域，强行拉回边缘。"""
+        # Manim 默认相机高度约为 8.0 (Y轴范围 -4 到 4)
+        # 安全区域取 3.5 (上下留白)
+        SAFE_Y = 3.5
+        SAFE_X = 6.5  # 假设 16:9 比例
+        x, y, z = target_point
+        new_y = max(min(y, SAFE_Y), -SAFE_Y)
+        new_x = max(min(x, SAFE_X), -SAFE_X)
+        mobj.move_to([new_x, new_y, z])
+
+    def clear_board(self):
+        """清除屏幕上所有可移除对象。必须在每个大章节结束时调用。"""
+        all_mobjects = list(self.mobjects)
+        if all_mobjects:
+            self.play(
+                *[FadeOut(mob) for mob in all_mobjects],
+                run_time=0.5,
+                lag_ratio=0.1,
+            )
+            self.wait(0.2)
 
     # ------------------------------------------------------------------
     # Setup — 定义域、条件、极限定义式

@@ -111,6 +111,54 @@ def construct(self):
 
 - 标题 font_size **48–60**；正文/公式 **36–42**。
 - 顶部：步骤标题；中/左：主推导；右/底：条件或图形。
+- 推荐在文件头定义 `FONT_SIZES`（title 48 / theorem 42 / formula_main 36 / formula_sub 30 / explanation 24 / footnote 18）并只从中取值。
+
+## 3.6 强制旁白挂载（消灭「完全静音」）
+
+`construct` **末尾**必须保留（禁止删除）：
+
+```python
+# >>> 强制加载音频 (不要删!) <<<
+self.load_and_play_narration()
+self.pad_to_narration_length()
+```
+
+`load_and_play_narration` 必须：
+1. 读 `narration.wav`；
+2. 临时关闭 `renderer.skip_animations`（否则缓存回放后 `add_sound` 会静默跳过）；
+3. `self.add_sound(audio_file, time_offset=-self.time)` —— 末尾调用也能从 t=0 起播。
+
+Harness 用火山引擎豆包 TTS（`seed-tts-2.0`）从 `narration.md` 生成 `narration.wav`。
+
+## 3.7 边界安全（铁律八）
+
+- 禁止 `UP*4` / `RIGHT*7` 等越界绝对位移；用 `to_edge` / `safe_move`（`SAFE_Y=3.5`, `SAFE_X=6.5`）。
+- 长公式必须 `scale(0.8)` 或换行。
+
+## 3.8 阶段清板与空间排他（超级规则〇 / 铁律七）
+
+- Setup / Derivation **结束**必须 `clear_board()`（Conclusion 可不强制）。
+- 禁止双 `ORIGIN` 霸屏；内容用 `to_edge` / `next_to` / `arrange`。
+- 感觉挤了就清屏，禁止幽灵重叠。
+
+## 3.9 美学常量（推荐 MUST）
+
+文件头定义语义配色，禁止随机颜色：
+
+```python
+COLOR_SYSTEM = {
+    "primary": BLUE,       # 主公式
+    "secondary": TEAL,     # 说明
+    "accent": ORANGE,      # 强调
+    "background_dim": GREY_D,
+    "neutral": WHITE,
+    "warning": RED,
+    "success": GREEN,      # 结论
+}
+```
+
+- 黄金分割布局：公式靠左约 1/3，说明靠右。
+- FadeIn / Transform 优先 `rate_func=smooth`。
 
 ---
 
@@ -131,5 +179,7 @@ def construct(self):
 - [ ] play 是否原子化（≤2 动画对象）？是否三态管理？
 - [ ] 名词是否有视觉锚定？VGroup + 相对定位？
 - [ ] 有无「先灭后写」代替项级变换？
+- [ ] `load_and_play_narration()` 是否在 construct 末尾保留？`narration.wav` 是否同目录？
+- [ ] 有无越界坐标 / 长公式溢出？
 
 任一项否 = 失败。

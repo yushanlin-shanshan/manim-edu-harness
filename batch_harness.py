@@ -27,7 +27,35 @@ from manim_edu_harness.glm_client import GLMClient, MockGLMClient  # noqa: E402
 from manim_edu_harness.renderer import renderer_render  # noqa: E402
 from manim_edu_harness.reviewer import reviewer_review  # noqa: E402
 from manim_edu_harness.textutil import sanitize_text, slugify  # noqa: E402
+from manim_edu_harness.tts_generator import synthesize_narration_file  # noqa: E402
 from manim_edu_harness.worker import worker_generate  # noqa: E402
+
+
+def _maybe_synthesize_tts(candidate: Path, *, dry_run: bool = False) -> dict[str, Any]:
+    """Generate candidate/narration.wav from narration.md; never block render."""
+    narration_md = candidate / "narration.md"
+    narration_wav = candidate / "narration.wav"
+    if dry_run:
+        note = "skipped_dry_run"
+        result = {"ok": False, "skipped": True, "note": note}
+        write_json(candidate / "TTS_RESULT.json", result)
+        print(f"WARNING: TTS {note}")
+        return result
+    ok, note = synthesize_narration_file(narration_md, narration_wav)
+    result = {
+        "ok": ok,
+        "skipped": False,
+        "note": sanitize_text(note),
+        "narration_md": str(narration_md) if narration_md.is_file() else None,
+        "narration_wav": str(narration_wav) if ok and narration_wav.is_file() else None,
+    }
+    write_json(candidate / "TTS_RESULT.json", result)
+    if ok:
+        print(f"→ TTS ok: {note}")
+    else:
+        print(f"WARNING: TTS failed (continue silent video): {note}")
+    sys.stdout.flush()
+    return result
 
 
 def load_knowledge_points(path: Path) -> list[dict[str, Any]]:
@@ -80,6 +108,9 @@ def run_single(
     for attempt in range(1, max_reviews + 1):
         attempts = attempt
         worker_result = worker_generate(kp, candidate, glm, fix_feedback=fix_feedback)
+        tts_result = _maybe_synthesize_tts(candidate, dry_run=dry_run)
+        worker_result["tts"] = tts_result
+        write_json(candidate / "WORKER_RESULT.json", worker_result)
         render_result = renderer_render(candidate, quality, skip_render=dry_run)
         final_review = reviewer_review(kp, worker_result, candidate, config, glm)
         verdict = str(final_review.get("verdict", "FIX")).upper()

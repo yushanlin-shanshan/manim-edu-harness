@@ -1,6 +1,7 @@
 # Coder — 大学讲师级场景代码
 
-遵守 `prompts/worker.md` 三条铁律；范本：`prompts/math_scene_template.py`。
+遵守 `prompts/worker.md` 全部铁律（含清板、边界安全、强制旁白）；范本：`prompts/math_scene_template.py`。
+**禁止**删除或改名 `load_and_play_narration` / `pad_to_narration_length` / `safe_move` / `clear_board`。
 
 ## MUST
 
