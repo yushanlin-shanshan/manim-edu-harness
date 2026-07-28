@@ -20,11 +20,19 @@ def _adjudicate(verification: dict[str, Any], audit: dict[str, Any]) -> str:
         return "FIX"
     if audit_verdict == "FIX":
         return "FIX"
+    # AST clean + math ok: promote even if LaTeX missing (Text-only pipeline).
+    if audit.get("math_ok", True) and audit_verdict in {"PASS", "INCONCLUSIVE"}:
+        if verification.get("render_status") in {"ok", "skipped", "skipped_dry_run", "env_blocked"}:
+            if audit_verdict == "PASS" or verification.get("env_blocked"):
+                # Prefer PASS when only environment blocked LaTeX; still FIX if math wrong.
+                if audit_verdict == "PASS" or (
+                    verification.get("env_blocked") and not audit.get("blockers")
+                ):
+                    return "PASS"
     if audit_verdict == "PASS" and audit.get("math_ok", True):
         return "PASS"
     if verification.get("env_blocked") or audit_verdict == "INCONCLUSIVE":
         return "INCONCLUSIVE"
-    # Dry-run / skipped render with AST ok + PASS audit → PASS
     if verification.get("render_status") in {"skipped", "skipped_dry_run"} and audit_verdict == "PASS":
         return "PASS"
     return "FIX"

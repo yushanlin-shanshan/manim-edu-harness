@@ -15,6 +15,16 @@ from .textutil import sanitize_text
 def _normalize_kp(kp: dict[str, Any]) -> dict[str, Any]:
     """Map knowledge-point schema → pipeline request."""
     topic = kp.get("topic") or kp.get("title") or kp.get("name") or "untitled"
+    constraints = list(kp.get("constraints") or [])
+    # Default hard constraints so batch stays renderable without LaTeX.
+    defaults = [
+        "只用 manim Text 与基础几何，禁止 MathTex/Tex/scipy/numpy",
+        "颜色只用 RED/BLUE/GREEN/YELLOW/ORANGE/PURPLE/PINK/WHITE/BLACK/GRAY/TEAL/GOLD",
+        "场景约 80-120 行",
+    ]
+    for item in defaults:
+        if item not in constraints:
+            constraints.append(item)
     req = {
         "topic": topic,
         "title": kp.get("title") or topic,
@@ -22,8 +32,9 @@ def _normalize_kp(kp: dict[str, Any]) -> dict[str, Any]:
         "audience": kp.get("audience") or "高中/大学低年级",
         "language": kp.get("language") or "zh-CN",
         "format": kp.get("format") or "理科知识点短剧",
+        "constraints": constraints,
     }
-    for key in ("constraints", "must_teach", "id"):
+    for key in ("must_teach", "id"):
         if key in kp:
             req[key] = kp[key]
     return req
