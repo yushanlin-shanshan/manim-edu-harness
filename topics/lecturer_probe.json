@@ -1,0 +1,26 @@
+{
+  "knowledge_points": [
+    {
+      "id": "kp-derivative-lecturer",
+      "title": "导数的几何意义：割线逼近切线",
+      "topic": "导数的几何意义：割线逼近切线（大学讲师级）",
+      "major": "数学 / 微积分",
+      "audience": "大学一年级",
+      "language": "zh-CN",
+      "key_points": [
+        "定义：f'(a)=lim_{Δx→0}[f(a+Δx)-f(a)]/Δx（极限存在）",
+        "条件：f 在 a∈R 处可微",
+        "几何意义：该极限等于点 a 处切线斜率",
+        "割线斜率随 Δx→0 逼近切线斜率（ValueTracker）",
+        "切线方程：y-f(a)=f'(a)(x-a)"
+      ],
+      "must_teach": [
+        "MathTex 形式化 + 定义域/条件",
+        "无跳跃推导；TransformMatchingTex",
+        "三态：活跃/背景opacity0.3/离场FadeOut",
+        "原子化 play；同屏动画≤2；# [KP-k] 标注",
+        "SurroundingRectangle 锚定；VGroup + 相对定位"
+      ]
+    }
+  ]
+}

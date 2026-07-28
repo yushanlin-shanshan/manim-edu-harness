@@ -1,0 +1,6 @@
+{
+  "id": "kp-derivative-lecturer-golden",
+  "title": "导数的几何意义：割线逼近切线",
+  "source": "prompts/math_scene_template.py",
+  "note": "University-lecturer golden; requires LaTeX+dvisvgm to render MathTex"
+}

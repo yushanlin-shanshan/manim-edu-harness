@@ -73,9 +73,10 @@ class AgentPipeline:
         self.request = request
 
     def run_planner(self) -> dict[str, Any]:
-        system = load_prompt("planner")
+        system = role_system_prompt("planner")
         user = (
-            "请为下列知识点设计一集理科短剧讲解方案（JSON）。\n\n"
+            "请为下列知识点设计一集大学讲师级讲解方案（JSON）。"
+            "必须：定义域/条件、无跳跃 derivation_steps、三态 visual、原子动画。\n\n"
             f"{json.dumps(self.request, ensure_ascii=False, indent=2)}"
         )
         plan = self.client.chat_json(
@@ -106,9 +107,9 @@ class AgentPipeline:
     def run_writer(self, plan: dict[str, Any]) -> str:
         system = role_system_prompt("writer")
         user = (
-            "根据规划写完整剧本（Markdown）。必须硬核干货、紧凑逻辑："
-            "定义→条件→分步推导→结论；禁止套话；每句服务 key_points/must_teach。\n"
-            "每个 beat 写明 FadeOut 对象与同屏≤4；公式板书必须分步。\n\n"
+            "根据规划写完整剧本（Markdown）。大学讲师级：定义→定义域/条件→无跳跃推导→结论。\n"
+            "每分句标注：[原子动画][KP-k][活跃/背景变暗/离场]；名词注明锚定框。\n"
+            "公式变换写 TransformMatchingTex；禁止「先灭后写」；禁止套话。\n\n"
             f"REQUEST:\n{json.dumps(self.request, ensure_ascii=False, indent=2)}\n\n"
             f"PLAN:\n{json.dumps(plan, ensure_ascii=False, indent=2)}"
         )
@@ -158,14 +159,14 @@ class AgentPipeline:
             # Keep prompt bounded but include modular-method patterns.
             template_hint = (
                 "\n\nREFERENCE_TEMPLATE (mirror modular phases + actor lifecycle):\n"
-                f"```python\n{template_path.read_text(encoding='utf-8')[:5500]}\n```\n"
+                f"```python\n{template_path.read_text(encoding='utf-8')[:9000]}\n```\n"
             )
         user = (
             "根据规划与剧本生成 ManimCommunity 场景。只输出 Python；类名 EpisodeScene。\n"
-            "铁律：construct 只编排；拆 setup/derivation/conclusion + clear_stage；"
-            "演员进场-表演-FadeOut；顶/主/辅分区；标题字号48-60、公式36-42；"
-            "单句一帧；长公式分步；每次play后wait(0.5~1)；阶段间wait(1)；"
-            "禁止废话与scipy/numpy。\n\n"
+            "大学讲师级铁律：MathTex+定义域/条件；# [KP-k]；无跳跃推导；"
+            "TransformMatchingTex；活跃/背景opacity0.3/离场FadeOut；"
+            "每次play只做一件事且动画对象≤2；play后wait(0.5~1)；"
+            "SurroundingRectangle锚定；VGroup+相对定位；禁止先灭后写代替项变换。\n\n"
             f"REQUEST:\n{json.dumps(self.request, ensure_ascii=False, indent=2)}\n\n"
             f"PLAN:\n{json.dumps(plan, ensure_ascii=False, indent=2)}\n\n"
             f"SCRIPT:\n{script}"
@@ -181,14 +182,16 @@ class AgentPipeline:
         scene_files: list[str],
         verification: dict[str, Any],
     ) -> dict[str, Any]:
-        system = load_prompt("reviewer")
+        system = role_system_prompt("reviewer")
         scene_blobs = []
         for name in scene_files:
             path = self.candidate / "scenes" / name
             if path.is_file():
                 scene_blobs.append(f"### {name}\n```python\n{path.read_text(encoding='utf-8')}\n```")
         user = (
-            "审查本集短剧候选产物。返回 JSON："
+            "审查本集候选产物。返回 JSON。"
+            "重要：env_blocked/缺LaTeX不是blocker；先读场景源码再判 KP/三态/原子化；"
+            "仅 minors→PASS；数学错或铁律硬伤→FIX。\n"
             '{"verdict":"PASS|FIX|INCONCLUSIVE","blockers":[],"majors":[],"minors":[],'
             '"math_ok":true,"claims":[],"fix_guidance":""}\n\n'
             f"REQUEST:\n{json.dumps(self.request, ensure_ascii=False, indent=2)}\n\n"

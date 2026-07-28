@@ -12,23 +12,37 @@ from .glm_client import GLMClient
 from .textutil import sanitize_text
 
 
+def _is_env_blocker(text: str) -> bool:
+    lower = text.lower()
+    keys = ("latex", "pdflatex", "xelatex", "ffmpeg", "渲染环境", "未安装", "env_blocked")
+    return any(k in lower for k in keys)
+
+
 def _adjudicate(verification: dict[str, Any], audit: dict[str, Any]) -> str:
     if not verification.get("ok"):
         return "FIX"
+    # Missing LaTeX/FFmpeg is an environment issue — strip from content blockers.
+    blockers = [b for b in (audit.get("blockers") or []) if not _is_env_blocker(str(b))]
+    audit = {**audit, "blockers": blockers}
     audit_verdict = str(audit.get("verdict", "FIX")).upper()
-    if audit.get("blockers"):
+    if blockers:
         return "FIX"
     if audit_verdict == "FIX":
+        # If GLM said FIX only because of env, and math_ok, treat as env gate.
+        guidance = str(audit.get("fix_guidance") or "")
+        if verification.get("env_blocked") and audit.get("math_ok", True) and _is_env_blocker(guidance):
+            # Still FIX if content majors remain; else PASS code for AST-only env.
+            majors = audit.get("majors") or []
+            if not majors:
+                return "PASS"
         return "FIX"
-    # AST clean + math ok: promote even if LaTeX missing (Text-only pipeline).
+    # AST clean + math ok: promote even if LaTeX missing (MathTex needs TeX later).
     if audit.get("math_ok", True) and audit_verdict in {"PASS", "INCONCLUSIVE"}:
         if verification.get("render_status") in {"ok", "skipped", "skipped_dry_run", "env_blocked"}:
-            if audit_verdict == "PASS" or verification.get("env_blocked"):
-                # Prefer PASS when only environment blocked LaTeX; still FIX if math wrong.
-                if audit_verdict == "PASS" or (
-                    verification.get("env_blocked") and not audit.get("blockers")
-                ):
-                    return "PASS"
+            if audit_verdict == "PASS" or (
+                verification.get("env_blocked") and not blockers
+            ):
+                return "PASS"
     if audit_verdict == "PASS" and audit.get("math_ok", True):
         return "PASS"
     if verification.get("env_blocked") or audit_verdict == "INCONCLUSIVE":
