@@ -155,15 +155,17 @@ class AgentPipeline:
         template_hint = ""
         template_path = project_root() / "prompts" / "math_scene_template.py"
         if template_path.is_file():
-            # Keep prompt bounded: only the construct body patterns matter.
+            # Keep prompt bounded but include modular-method patterns.
             template_hint = (
-                "\n\nREFERENCE_TEMPLATE (follow stepwise Write + FadeOut patterns):\n"
-                f"```python\n{template_path.read_text(encoding='utf-8')[:3500]}\n```\n"
+                "\n\nREFERENCE_TEMPLATE (mirror modular phases + actor lifecycle):\n"
+                f"```python\n{template_path.read_text(encoding='utf-8')[:5500]}\n```\n"
             )
         user = (
-            "根据规划与剧本生成 ManimCommunity 场景代码。只输出 Python 代码块；类名 EpisodeScene。\n"
-            "强制：同屏≤4；新式前 FadeOut 旧元素；公式左→=→右分步 Write，禁止一次写完长公式；"
-            "禁止 scipy/numpy；约 80–160 行。\n\n"
+            "根据规划与剧本生成 ManimCommunity 场景。只输出 Python；类名 EpisodeScene。\n"
+            "铁律：construct 只编排；拆 setup/derivation/conclusion + clear_stage；"
+            "演员进场-表演-FadeOut；顶/主/辅分区；标题字号48-60、公式36-42；"
+            "单句一帧；长公式分步；每次play后wait(0.5~1)；阶段间wait(1)；"
+            "禁止废话与scipy/numpy。\n\n"
             f"REQUEST:\n{json.dumps(self.request, ensure_ascii=False, indent=2)}\n\n"
             f"PLAN:\n{json.dumps(plan, ensure_ascii=False, indent=2)}\n\n"
             f"SCRIPT:\n{script}"
