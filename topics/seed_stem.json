@@ -1,0 +1,62 @@
+{
+  "version": 1,
+  "description": "Seed STEM topics for batch short-drama Manim explainers",
+  "topics": [
+    {
+      "topic": "导数的几何意义：切线斜率",
+      "major": "数学 / 微积分",
+      "audience": "高中 / 大一",
+      "language": "zh-CN",
+      "format": "理科知识点短剧"
+    },
+    {
+      "topic": "牛顿第二定律 F=ma：力、质量与加速度",
+      "major": "物理 / 力学",
+      "audience": "高中",
+      "language": "zh-CN",
+      "format": "理科知识点短剧"
+    },
+    {
+      "topic": "化学反应速率与活化能（定性）",
+      "major": "化学 / 反应动力学入门",
+      "audience": "高中",
+      "language": "zh-CN",
+      "format": "理科知识点短剧"
+    },
+    {
+      "topic": "贝叶斯定理：先验、似然与后验",
+      "major": "统计 / 概率",
+      "audience": "大学低年级",
+      "language": "zh-CN",
+      "format": "理科知识点短剧"
+    },
+    {
+      "topic": "麦克斯韦方程组直觉：电场变化如何感应磁场",
+      "major": "物理 / 电磁学",
+      "audience": "大学",
+      "language": "zh-CN",
+      "format": "理科知识点短剧"
+    },
+    {
+      "topic": "中心极限定理：为何样本均值趋近正态",
+      "major": "统计",
+      "audience": "大学",
+      "language": "zh-CN",
+      "format": "理科知识点短剧"
+    },
+    {
+      "topic": "DNA 双螺旋与碱基互补配对",
+      "major": "生物",
+      "audience": "高中",
+      "language": "zh-CN",
+      "format": "理科知识点短剧"
+    },
+    {
+      "topic": "梯度下降：损失函数上的下山直觉",
+      "major": "计算机 / 机器学习入门",
+      "audience": "大学",
+      "language": "zh-CN",
+      "format": "理科知识点短剧"
+    }
+  ]
+}

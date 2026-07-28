@@ -1,0 +1,5 @@
+# Core harness — stdlib + HTTP client for Zhipu
+requests>=2.31.0
+
+# Optional: install ManimCommunity for real renders
+# manim>=0.18.0

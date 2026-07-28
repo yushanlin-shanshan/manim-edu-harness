@@ -1,0 +1,47 @@
+{
+  "workspace": "workspace",
+  "runs_dir": "runs",
+  "max_reviews": 3,
+  "timeout_seconds": 5400,
+  "verification_timeout_seconds": 900,
+  "review_protocol_version": 2,
+  "zhipu": {
+    "model": "glm-4-plus",
+    "base_url_env": "ZHIPU_BASE_URL",
+    "api_key_env": "ZHIPU_API_KEY",
+    "temperature": 0.4,
+    "max_tokens": 8192
+  },
+  "pipeline": {
+    "agents": ["planner", "writer", "coder", "reviewer"],
+    "short_drama": {
+      "target_duration_sec": [45, 90],
+      "scenes_per_episode": [3, 6],
+      "style": "理科知识点短剧：人物对话驱动 + Manim 可视化讲解"
+    }
+  },
+  "verification_commands": [
+    ["{python}", "-m", "compileall", "-q", "scenes"],
+    ["{python}", "-m", "manim_edu_harness.verify_manim", "--candidate", "."]
+  ],
+  "review_policy": {
+    "require_plan": true,
+    "require_math_accuracy": true,
+    "require_renderable_manim": true,
+    "max_dynamic_checks": 8,
+    "per_check_timeout_seconds": 600,
+    "total_check_timeout_seconds": 1800,
+    "required_risk_categories": [
+      "math_correctness",
+      "pedagogy_clarity",
+      "manim_renderability",
+      "script_coherence",
+      "visual_layout",
+      "safety_content"
+    ]
+  },
+  "batch": {
+    "concurrency": 1,
+    "topics_file": "topics/seed_stem.json"
+  }
+}
