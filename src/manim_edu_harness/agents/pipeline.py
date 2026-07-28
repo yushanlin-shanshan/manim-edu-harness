@@ -18,6 +18,20 @@ def _extract_code_blocks(text: str) -> list[tuple[str, str]]:
     return [(m.group(1) or "", m.group(2)) for m in pattern.finditer(text)]
 
 
+def _sanitize_scene_source(src: str) -> str:
+    """Rewrite common invalid Manim color identifiers before save."""
+    replacements = (
+        ("BROWN", '"#8B4513"'),
+        ("DARK_BROWN", '"#654321"'),
+        ("LIGHT_BROWN", '"#CD853F"'),
+        ("CYAN", "TEAL"),
+        ("MAGENTA", "PINK"),
+    )
+    for bad, good in replacements:
+        src = re.sub(rf"\b{bad}\b", good, src)
+    return src
+
+
 def _write_scenes_from_coder(text: str, candidate: Path) -> list[str]:
     scenes_dir = candidate / "scenes"
     scenes_dir.mkdir(parents=True, exist_ok=True)
@@ -32,7 +46,7 @@ def _write_scenes_from_coder(text: str, candidate: Path) -> list[str]:
     for i, body in enumerate(py_blocks):
         name = "episode.py" if i == 0 else f"episode_{i}.py"
         path = scenes_dir / name
-        path.write_text(body.strip() + "\n", encoding="utf-8")
+        path.write_text(_sanitize_scene_source(body.strip()) + "\n", encoding="utf-8")
         written.append(name)
     return written
 

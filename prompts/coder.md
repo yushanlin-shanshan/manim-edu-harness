@@ -5,12 +5,13 @@
 硬性要求：
 1. 只输出一个或多个 ```python``` 代码块；第一个模块应可独立渲染。
 2. 主场景类名优先 `EpisodeScene`，继承 `Scene`（或 `MovingCameraScene` 如确有需要）。
-3. 优先 `Text` + 简单几何；公式可用 `MathTex`/`Tex`，但注意本机可能无 LaTeX——尽量减少复杂 Tex，关键公式也可用 `Text("f'(x)=...")` 降级表达以保证可渲染。
-4. 布局防重叠：元素用 `VGroup`、`arrange`、`to_edge`、`next_to`；一次不要塞满屏幕。
-5. 动画节奏匹配短剧：`FadeIn`/`Write`/`Transform`/`Indicate`；总时长感约 45–90 秒（可用 `self.wait`）。
-6. 禁止：网络请求、读写候选目录外路径、`os.system`、无限循环、`scipy`；尽量不用 `numpy`。
-7. 代码必须语法正确，可被 `ast.parse`；类内必须有 `construct(self)`；控制在约 120 行内，减少引号转义错误。
-8. 若剧本含多 beat，用清晰分区注释 `# --- Beat N ---`。
+3. **默认不要用 `MathTex`/`Tex`**（很多环境无 LaTeX）。公式一律用 `Text("F=ma")` 这类字符串。
+4. 颜色只用 manim 内置：`RED, BLUE, GREEN, YELLOW, ORANGE, PURPLE, PINK, WHITE, BLACK, GRAY, GREY, TEAL, GOLD, MAROON`。禁止 `BROWN`/`DARK_BROWN` 等未保证存在的名字；需要棕色时用 `GOLD` 或十六进制 `color="#8B4513"`。
+5. 布局防重叠：`VGroup` / `arrange` / `to_edge` / `next_to`；一次不要塞满屏幕。
+6. 动画：`FadeIn`/`Write`/`Transform`/`Indicate` + `self.wait`；体感 45–90 秒。
+7. 禁止：网络、`os.system`、无限循环、`scipy`、`numpy`。
+8. 必须 `ast.parse` 通过；有 `construct(self)`；整文件约 80–120 行。
+9. 多 beat 用注释 `# --- Beat N ---`。
 
 参考最小骨架：
 
@@ -24,7 +25,9 @@ class EpisodeScene(Scene):
         self.play(Write(title))
         self.wait(0.5)
         self.play(FadeOut(title))
-        # ...
+        formula = Text("F = ma", font_size=40, color=YELLOW)
+        self.play(Write(formula))
+        self.wait(0.8)
 ```
 
 FIX 轮：覆盖写出完整可替换模块，不要只给 diff。

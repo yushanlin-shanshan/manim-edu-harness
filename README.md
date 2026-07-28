@@ -39,6 +39,8 @@ python harness_control.py batch --limit 2
 
 Outputs land in `workspace/` only after **PASS**. Failed runs keep `runs/<id>/candidate/` for diagnosis.
 
+Successful episodes are also archived under `workspace/library/<run_id>/` (with `catalog.json` and optional `videos/EpisodeScene.mp4`) so batch runs do not overwrite prior deliveries.
+
 ## Requirements
 
 - Python 3.10+ (3.11+ recommended)

@@ -21,6 +21,7 @@ SKIP_NAMES = {
     ".env",
     "media",
     "partial_movie_files",
+    "library",
 }
 
 
@@ -102,14 +103,17 @@ def copy_tree(src: Path, dst: Path) -> None:
         shutil.copy2(path, target)
 
 
+PRESERVE_ON_PROMOTE = {".git", "library"}
+
+
 def promote(candidate: Path, workspace: Path, backup: Path | None = None) -> None:
     if backup is not None:
         if workspace.exists() and any(workspace.iterdir()):
             copy_tree(workspace, backup)
-    # Replace workspace contents with candidate (keep workspace root)
+    # Replace workspace contents with candidate (keep workspace root + library archive)
     if workspace.exists():
         for child in list(workspace.iterdir()):
-            if child.name == ".git":
+            if child.name in PRESERVE_ON_PROMOTE:
                 continue
             if child.is_dir():
                 shutil.rmtree(child)

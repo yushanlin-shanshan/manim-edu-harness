@@ -239,9 +239,23 @@ class Harness:
             meta["pause_reason"] = "Formal workspace changed during run; refuse blind promote."
             self._persist(meta)
             return meta
+        # Promote latest episode to workspace root; keep library/ intact.
         promote(candidate, self.workspace, backup=backup)
+        library_dir = self.workspace / "library" / meta["run_id"]
+        library_dir.mkdir(parents=True, exist_ok=True)
+        copy_tree(candidate, library_dir)
+        # Prefer rendered mp4 into library/videos when present under candidate media/
+        videos_dir = library_dir / "videos"
+        videos_dir.mkdir(exist_ok=True)
+        for mp4 in candidate.rglob("EpisodeScene.mp4"):
+            if "partial_movie_files" in mp4.parts:
+                continue
+            target = videos_dir / "EpisodeScene.mp4"
+            target.write_bytes(mp4.read_bytes())
+            break
         meta["status"] = "COMPLETE"
         meta["phase"] = "promoted"
+        meta["library_path"] = str(library_dir)
         meta["workspace_fp_after"] = fingerprint(self.workspace)
         report = {
             "run_id": meta["run_id"],
@@ -249,9 +263,33 @@ class Harness:
             "request": meta["request"],
             "episode": read_json(candidate / "EPISODE.json"),
             "final_review": read_json(candidate / "FINAL_REVIEW.json"),
+            "library_path": str(library_dir),
         }
         write_json(run_dir / "REPORT.json", report)
         write_json(self.workspace / "LATEST_EPISODE.json", report["episode"])
+        write_json(library_dir / "REPORT.json", report)
+        catalog_path = self.workspace / "library" / "catalog.json"
+        catalog = {"episodes": []}
+        if catalog_path.is_file():
+            try:
+                catalog = read_json(catalog_path)
+            except Exception:
+                catalog = {"episodes": []}
+        episodes = [e for e in catalog.get("episodes", []) if e.get("run_id") != meta["run_id"]]
+        video_rel = None
+        if (library_dir / "videos" / "EpisodeScene.mp4").is_file():
+            video_rel = f"library/{meta['run_id']}/videos/EpisodeScene.mp4"
+        episodes.append(
+            {
+                "run_id": meta["run_id"],
+                "topic": meta["request"].get("topic"),
+                "title": report["episode"].get("title"),
+                "path": f"library/{meta['run_id']}",
+                "video": video_rel,
+            }
+        )
+        catalog["episodes"] = episodes
+        write_json(catalog_path, catalog)
         self._persist(meta)
         return meta
 
