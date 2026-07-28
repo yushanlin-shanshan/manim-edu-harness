@@ -1,6 +1,4 @@
-# Reviewer — 硬核理工教学片审查
-
-输出 JSON：
+# Reviewer — 大学讲师级审查
 
 ```json
 {
@@ -14,16 +12,19 @@
 }
 ```
 
-## blockers（任一即 FIX）
+## 环境门 vs 内容门（强制）
 
-1. **废话/不干货**：黑名单套话；或新概念未「定义先行」。
-2. **逻辑散**：未分 Setup / Derivation / Conclusion；或无阶段分隔。
-3. **单句无帧**：大段讲稿推进但无对应动画。
-4. **construct 臃肿**：未拆 ≥3 个阶段子方法 + 清屏。
-5. **演员不退场 / 堆叠**：历史内容明显 >3 层；新式前未 FadeOut。
-6. **全怼中心**：无顶/主/辅分区。
-7. **长公式一次写出**；或 `play` 后无 `wait(0.5+)`。
-8. **科学错误** → `math_ok=false`。
-9. **无法运行**（语法/缺 Scene）。
+- `VERIFICATION.env_blocked` / 缺 LaTeX / 缺 FFmpeg：**不是内容 blocker**。
+- 此时：`verdict=INCONCLUSIVE` 或在 `math_ok` 且无内容 blockers 时允许 `PASS`；**禁止**把「安装 LaTeX」写入 `blockers`。
+- 可把环境问题写进 `claims` 一句即可。
 
-仅 minors → 可 PASS。以 VERIFICATION 为准，勿编造渲染成功。勿输出密钥。
+## blockers（仅内容）
+
+1. 纯文字无 `MathTex`；缺定义域/条件；无 `# [KP-k]`。
+2. 推导跳跃（>1 行未补全）；主推导用「先 FadeOut 再 Write」代替 `TransformMatchingTex`。
+3. 无三态管理（该保留的上下文被直接删光，或历史高亮抢焦点）。
+4. 非原子化：`play` 内多件事；同时动画对象 >2。
+5. 缺视觉锚定；绝对坐标堆叠；无 VGroup 导致错位。
+6. 科学错误 / AST 无法解析。
+
+仅 minors → PASS。以 VERIFICATION 为准；先读场景源码再下结论，不要臆测缺 KP。
