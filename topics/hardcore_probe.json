@@ -1,0 +1,39 @@
+{
+  "knowledge_points": [
+    {
+      "id": "kp-pythagoras-probe",
+      "title": "勾股定理",
+      "topic": "勾股定理：直角三角形边长关系的面积证明",
+      "major": "数学 / 几何",
+      "audience": "初高中",
+      "language": "zh-CN",
+      "key_points": [
+        "定义：直角三角形直角边 a,b，斜边 c",
+        "已知：∠C=90°",
+        "证明思路：外正方形面积 (a+b)^2 = 4*(ab/2) + c^2",
+        "结论：a^2 + b^2 = c^2"
+      ],
+      "must_teach": [
+        "定义先行；Setup→Derivation→Conclusion",
+        "construct 拆子方法；演员退场；单句一帧；公式分步"
+      ]
+    },
+    {
+      "id": "kp-derivative-v3",
+      "title": "导数的几何意义：切线斜率",
+      "topic": "导数的几何意义：切线斜率",
+      "major": "数学 / 微积分",
+      "audience": "高中 / 大一",
+      "language": "zh-CN",
+      "key_points": [
+        "定义：f'(a)=lim_{h→0}[f(a+h)-f(a)]/h",
+        "几何意义：f'(a) 为 x=a 处切线斜率",
+        "割线→切线极限过程分步",
+        "切线方程：y-f(a)=f'(a)(x-a)"
+      ],
+      "must_teach": [
+        "定义先行；三阶段模块化；FadeOut 生命周期；顶主辅分区"
+      ]
+    }
+  ]
+}
