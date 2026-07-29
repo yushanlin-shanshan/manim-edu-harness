@@ -1,0 +1,120 @@
+"""Handoff / checklist / progress artifacts for context-reset FIX rounds."""
+
+from __future__ import annotations
+
+import json
+from datetime import datetime, timezone
+from pathlib import Path
+from typing import Any
+
+from .fsutil import write_json
+
+
+def build_kp_checklist(request: dict[str, Any], kp: dict[str, Any] | None = None) -> dict[str, Any]:
+    """Initializer artifact: default-FAIL checklist from key_points / must_teach."""
+    kp = kp or {}
+    items: list[dict[str, Any]] = []
+    key_points = list(kp.get("key_points") or request.get("key_points") or [])
+    must_teach = list(kp.get("must_teach") or request.get("must_teach") or [])
+    for i, desc in enumerate(key_points, 1):
+        items.append({"id": f"KP-{i}", "description": str(desc), "passes": False})
+    for i, desc in enumerate(must_teach, 1):
+        items.append({"id": f"MT-{i}", "description": str(desc), "passes": False})
+    if not items:
+        items.append(
+            {
+                "id": "KP-1",
+                "description": str(request.get("topic") or "core concept"),
+                "passes": False,
+            }
+        )
+    return {
+        "topic": request.get("topic") or kp.get("topic"),
+        "items": items,
+        "note": "Coder/FIX may only flip passes=true after evidence; never delete items.",
+    }
+
+
+def write_kp_checklist(candidate: Path, request: dict[str, Any], kp: dict[str, Any] | None = None) -> Path:
+    path = Path(candidate) / "KP_CHECKLIST.json"
+    write_json(path, build_kp_checklist(request, kp))
+    return path
+
+
+def append_progress(candidate: Path, text: str) -> None:
+    path = Path(candidate) / "PROGRESS.md"
+    stamp = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%SZ")
+    block = f"\n## {stamp}\n\n{text.rstrip()}\n"
+    if path.is_file():
+        path.write_text(path.read_text(encoding="utf-8") + block, encoding="utf-8")
+    else:
+        path.write_text("# Progress log\n" + block, encoding="utf-8")
+
+
+def build_handoff(
+    *,
+    failed_checks: list[str],
+    focus_files: list[str] | None = None,
+    forbidden_rewrites: list[str] | None = None,
+    fix_guidance: str = "",
+    open_checklist: list[dict[str, Any]] | None = None,
+) -> dict[str, Any]:
+    return {
+        "failed_checks": failed_checks,
+        "focus_files": focus_files or ["scenes/episode.py", "scene.py"],
+        "forbidden_rewrites": forbidden_rewrites
+        or [
+            "Do not delete load_and_play_narration / clear_board / safe_move",
+            "Do not remove KP_CHECKLIST items; only set passes",
+        ],
+        "fix_guidance": fix_guidance,
+        "open_checklist": open_checklist or [],
+    }
+
+
+def write_handoff_from_review(
+    candidate: Path,
+    *,
+    final_review: dict[str, Any] | None = None,
+    rule_gate: dict[str, Any] | None = None,
+    verification: dict[str, Any] | None = None,
+) -> Path:
+    """Rule-based handoff when LLM does not emit structured fields."""
+    candidate = Path(candidate)
+    failed: list[str] = []
+    if rule_gate and not rule_gate.get("ok"):
+        failed.extend(str(x) for x in (rule_gate.get("failures") or []))
+    if verification and not verification.get("ok"):
+        failed.extend(str(x) for x in (verification.get("errors") or [])[:5])
+    if final_review:
+        reason = final_review.get("reason")
+        if reason:
+            failed.append(str(reason))
+    open_items: list[dict[str, Any]] = []
+    checklist_path = candidate / "KP_CHECKLIST.json"
+    if checklist_path.is_file():
+        data = json.loads(checklist_path.read_text(encoding="utf-8"))
+        open_items = [it for it in (data.get("items") or []) if not it.get("passes")]
+    handoff = build_handoff(
+        failed_checks=failed or ["unspecified FIX"],
+        fix_guidance=str((final_review or {}).get("reason") or ""),
+        open_checklist=open_items,
+    )
+    path = candidate / "HANDOFF.json"
+    write_json(path, handoff)
+    return path
+
+
+def load_handoff(candidate: Path) -> dict[str, Any]:
+    path = Path(candidate) / "HANDOFF.json"
+    if path.is_file():
+        return json.loads(path.read_text(encoding="utf-8"))
+    return {}
+
+
+def open_checklist_items(candidate: Path) -> list[dict[str, Any]]:
+    path = Path(candidate) / "KP_CHECKLIST.json"
+    if not path.is_file():
+        return []
+    data = json.loads(path.read_text(encoding="utf-8"))
+    return [it for it in (data.get("items") or []) if not it.get("passes")]

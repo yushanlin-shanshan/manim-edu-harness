@@ -1,0 +1,51 @@
+# Harness Architecture (Phase 1)
+
+## Literature → this repo
+
+| Source | Principle | Phase-1 implementation |
+|---|---|---|
+| Mitchell — Engineer the Harness | Mistake → permanent gate/tool | [`rule_gate.py`](../src/manim_edu_harness/rule_gate.py); skills under `prompts/skills/` |
+| Anthropic — long-running agents | Initializer + incremental handoff | `KP_CHECKLIST.json`, `PROGRESS.md`, `HANDOFF.json` |
+| Anthropic — context anxiety / reset | Fresh context + structured handoff | FIX `run_fix` no longer reinjects full scene bodies |
+| Context engineering | Progressive disclosure | `core.md` + role→skills in `agents/__init__.py` |
+| Triangle (planner/builder/evaluator) | Evaluator does not write | Reviewer skills exclude animation API dump; rule_gate before LLM |
+| LangChain — eval + traces | Scorecard + replay signal | `evals/`, `scripts/run_evals.py`, `TRACE.jsonl` |
+
+## Control flow
+
+```text
+Initializer (planner)
+  → KP_CHECKLIST (passes=false) + PROGRESS
+Builder (writer → coder)
+  → scenes + narration
+TTS / Render
+RuleGate (deterministic)
+  → FAIL ⇒ FIX + HANDOFF (no LLM)
+Evaluator (LLM reviewer, read-only posture)
+  → PASS | FIX | INCONCLUSIVE
+FIX round (context reset)
+  → HANDOFF + open checklist only (short prompt)
+```
+
+## Phase 2 (not in this PR)
+
+- Unify `batch_harness.py` and `Harness` into one control plane
+- Skill registry / marketplace (ClawHub-style)
+- Trace-driven automatic prompt patches (Hermes-style learning loop)
+
+## Operator commands
+
+```bash
+# Progressive disclosure sanity
+python -c "from manim_edu_harness.agents import assemble_constraints; print(len(assemble_constraints('planner')), len(assemble_constraints('coder')))"
+
+# Deterministic evals
+python scripts/run_evals.py
+
+# Batch (writes TRACE.jsonl per candidate)
+python batch_harness.py --input topics/batch_probe.json --limit 1
+```
+
+## Mitchell rule for contributors
+
+When an agent fails a quality bar, **change `rule_gate` or a skill file**, not only chat feedback. See root [`AGENTS.md`](../AGENTS.md).

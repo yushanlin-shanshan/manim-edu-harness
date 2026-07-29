@@ -1,0 +1,68 @@
+{
+  "knowledge_points": [
+    {
+      "id": "kp-derivative-lecturer",
+      "title": "导数的几何意义：割线逼近切线",
+      "topic": "导数的几何意义：割线逼近切线（大学讲师级）",
+      "major": "数学 / 微积分",
+      "audience": "大学一年级",
+      "language": "zh-CN",
+      "key_points": [
+        "定义：f'(a)=lim_{Δx→0}[f(a+Δx)-f(a)]/Δx（极限存在）",
+        "条件：f 在 a∈R 处可微",
+        "几何意义：该极限等于点 a 处切线斜率",
+        "割线斜率随 Δx→0 逼近切线斜率（ValueTracker）",
+        "切线方程：y-f(a)=f'(a)(x-a)"
+      ],
+      "must_teach": [
+        "MathTex 形式化 + 定义域/条件",
+        "无跳跃推导；TransformMatchingTex",
+        "三态：活跃/背景opacity0.3/离场FadeOut",
+        "原子化 play；同屏动画≤2；# [KP-k] 标注",
+        "SurroundingRectangle 锚定；VGroup + 相对定位",
+        "clear_board；safe_move；load_and_play_narration"
+      ]
+    },
+    {
+      "id": "kp-pythagoras-probe",
+      "title": "勾股定理",
+      "topic": "勾股定理：直角三角形边长关系的面积证明",
+      "major": "数学 / 几何",
+      "audience": "初高中",
+      "language": "zh-CN",
+      "key_points": [
+        "定义：直角三角形直角边 a,b，斜边 c",
+        "已知：∠C=90°",
+        "证明思路：外正方形面积 (a+b)^2 = 4*(ab/2) + c^2",
+        "结论：a^2 + b^2 = c^2"
+      ],
+      "must_teach": [
+        "MathTex 形式化 + 定义域/条件；# [KP-k]",
+        "无跳跃推导；TransformMatchingTex",
+        "三态：活跃/背景变暗/离场；原子化 play≤2",
+        "clear_board；safe_move；load_and_play_narration"
+      ]
+    },
+    {
+      "id": "kp-fma-probe",
+      "title": "牛顿第二定律 F=ma",
+      "topic": "牛顿第二定律：合力、质量与加速度",
+      "major": "物理 / 力学",
+      "audience": "高中 / 大一",
+      "language": "zh-CN",
+      "key_points": [
+        "定义：F_net = m a（矢量）",
+        "条件：惯性系；m>0",
+        "推论：a = F_net / m",
+        "区分质量 m 与重量 mg",
+        "加速度方向与合力方向相同"
+      ],
+      "must_teach": [
+        "MathTex 形式化 + 条件；# [KP-k]",
+        "无跳跃推导；TransformMatchingTex",
+        "三态与原子化 play；相对布局",
+        "clear_board；safe_move；load_and_play_narration"
+      ]
+    }
+  ]
+}

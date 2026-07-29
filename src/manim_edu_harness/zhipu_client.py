@@ -45,6 +45,8 @@ class ZhipuClient:
         max_tokens: int | None = None,
         response_format_json: bool = False,
     ) -> str:
+        import time
+
         url = f"{self.base_url}/chat/completions"
         body: dict[str, Any] = {
             "model": self.model,
@@ -65,15 +67,37 @@ class ZhipuClient:
                 "Authorization": f"Bearer {self.api_key}",
             },
         )
-        try:
-            with urllib.request.urlopen(req, timeout=300) as resp:
-                payload = json.loads(resp.read().decode("utf-8"))
-        except urllib.error.HTTPError as exc:
-            detail = exc.read().decode("utf-8", errors="replace")
-            # Never echo Authorization or raw key material.
-            raise ZhipuError(f"Zhipu HTTP {exc.code}: {detail[:800]}") from None
-        except urllib.error.URLError as exc:
-            raise ZhipuError(f"Zhipu network error: {exc.reason}") from None
+
+        last_err: Exception | None = None
+        for attempt in range(1, 4):
+            try:
+                with urllib.request.urlopen(req, timeout=300) as resp:
+                    payload = json.loads(resp.read().decode("utf-8"))
+                break
+            except urllib.error.HTTPError as exc:
+                detail = exc.read().decode("utf-8", errors="replace")
+                # Never echo Authorization or raw key material.
+                raise ZhipuError(f"Zhipu HTTP {exc.code}: {detail[:800]}") from None
+            except urllib.error.URLError as exc:
+                last_err = exc
+                if attempt >= 3:
+                    raise ZhipuError(f"Zhipu network error: {exc.reason}") from None
+                time.sleep(1.5 * attempt)
+            except Exception as exc:  # RemoteDisconnected / IncompleteRead etc.
+                last_err = exc
+                name = type(exc).__name__
+                if name not in {
+                    "RemoteDisconnected",
+                    "IncompleteRead",
+                    "TimeoutError",
+                    "ConnectionResetError",
+                } and "RemoteDisconnected" not in repr(exc):
+                    raise
+                if attempt >= 3:
+                    raise ZhipuError(f"Zhipu network error: {name}: {exc}") from None
+                time.sleep(1.5 * attempt)
+        else:
+            raise ZhipuError(f"Zhipu network error: {last_err}")
 
         try:
             return payload["choices"][0]["message"]["content"]

@@ -2,10 +2,18 @@
 
 This repository is a **domain harness** for batch STEM short-drama Manim explainers.
 
+Harness Engineering (Mitchell): when an agent makes a mistake, **engineer the harness** so it cannot happen again — prefer `prompts/skills/*.md` + `rule_gate.py` over one-off chat corrections.
+
+## Progressive disclosure
+
+- Shared: `prompts/core.md`
+- Skills: `prompts/skills/` assembled per role via `agents.assemble_constraints`
+- Index: `prompts/worker.md` (human-readable map; LLM uses core+skills)
+
 ## Root operator
 
-1. Load `AGENTS.md` and `harness.config.json`.
-2. Never print, commit, or embed `ZHIPU_API_KEY` / `.env` contents.
+1. Load `AGENTS.md`, `docs/harness-architecture.md`, and `harness.config.json`.
+2. Never print, commit, or embed `ZHIPU_API_KEY` / `VOLC_TTS_*` / `.env` contents.
 3. Before `start`, run `python harness_control.py status`. If an unfinished run exists, `continue` or `stop` — do not duplicate `start`.
 4. Clear user asks become a run request; only ask one short clarifying question when missing info would change the episode materially.
 5. Prefer Chinese user-facing episode content when the request language is `zh-CN`.
@@ -13,16 +21,21 @@ This repository is a **domain harness** for batch STEM short-drama Manim explain
 ## Worker scope
 
 - Implement only inside the current run's `candidate/` (Harness copies workspace → candidate).
-- Produce `PLAN.md` / `PLAN.json`, `SCRIPT.md`, `scenes/*.py`, `EPISODE.json`, `WORKER_RESULT.json`.
+- Produce `PLAN.md` / `PLAN.json`, `SCRIPT.md`, `scenes/*.py`, `EPISODE.json`, `WORKER_RESULT.json`, plus `KP_CHECKLIST.json` / `PROGRESS.md`.
+- FIX rounds consume `HANDOFF.json` (short context) — do not rely on pasting entire prior scenes into the LLM prompt.
 - Do not modify Harness source during a content run.
 - Do not read or write `.env`.
 
 ## Reviewer scope
 
-- Use Review-style JSON audit (`AUDIT.json`); Harness owns final adjudication with verification evidence.
+- **Evaluator only** — do not write Manim scenes.
+- Deterministic `RULE_GATE.json` runs before LLM audit; failures force FIX.
+- Use Review-style JSON audit (`AUDIT.json`); shared `reviewer.adjudicate` owns final verdict with verification evidence.
 - Math errors are blockers. Layout nits may be minors.
-- You cannot waive failed deterministic verification.
+- You cannot waive failed deterministic verification / rule_gate.
 
 ## Batch mode
 
-`python harness_control.py batch --topics topics/seed_stem.json --limit N` runs topics sequentially (concurrency 1 by default). Each topic is a separate run with promote-on-PASS.
+`python batch_harness.py --input topics/batch_probe.json --limit N` runs topics sequentially. Each topic is a separate run with promote-on-PASS.
+
+`python scripts/run_evals.py` scores delivered/golden paths via rule_gate.

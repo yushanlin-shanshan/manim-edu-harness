@@ -24,11 +24,14 @@ if str(SRC) not in sys.path:
 
 from manim_edu_harness.fsutil import load_dotenv, load_config, write_json  # noqa: E402
 from manim_edu_harness.glm_client import GLMClient, MockGLMClient  # noqa: E402
+from manim_edu_harness.handoff import append_progress, write_handoff_from_review  # noqa: E402
 from manim_edu_harness.renderer import renderer_render  # noqa: E402
 from manim_edu_harness.reviewer import reviewer_review  # noqa: E402
 from manim_edu_harness.textutil import sanitize_text, slugify  # noqa: E402
+from manim_edu_harness.trace import TraceSpan, append_trace  # noqa: E402
 from manim_edu_harness.tts_generator import synthesize_narration_file  # noqa: E402
 from manim_edu_harness.worker import worker_generate  # noqa: E402
+from manim_edu_harness.zhipu_client import ZhipuError  # noqa: E402
 
 
 def _maybe_synthesize_tts(candidate: Path, *, dry_run: bool = False) -> dict[str, Any]:
@@ -104,21 +107,51 @@ def run_single(
     fix_feedback: str | None = None
     worker_result: dict[str, Any] = {}
     final_review: dict[str, Any] = {}
+    render_result: dict[str, Any] = {}
 
     for attempt in range(1, max_reviews + 1):
         attempts = attempt
-        worker_result = worker_generate(kp, candidate, glm, fix_feedback=fix_feedback)
-        tts_result = _maybe_synthesize_tts(candidate, dry_run=dry_run)
+        try:
+            with TraceSpan(candidate, "worker_generate", attempt=attempt):
+                worker_result = worker_generate(kp, candidate, glm, fix_feedback=fix_feedback)
+        except ZhipuError as exc:
+            # Transient GLM disconnects should not wipe the whole KP mid-FIX.
+            print(f"WARNING: GLM network on attempt {attempt}: {exc}")
+            sys.stdout.flush()
+            append_trace(candidate, "worker_generate", ok=False, attempt=attempt, error=str(exc))
+            if attempt >= max_reviews:
+                return {
+                    "title": sanitize_text(title),
+                    "slug": slug,
+                    "status": "ERROR",
+                    "verdict": "ERROR",
+                    "attempts": attempts,
+                    "run_dir": str(run_dir),
+                    "delivered": None,
+                    "reason": sanitize_text(f"ZhipuError: {exc}"),
+                    "dry_run": dry_run,
+                }
+            fix_feedback = f"Previous attempt failed due to API network error: {exc}. Regenerate fully."
+            time.sleep(2.0 * attempt)
+            continue
+        with TraceSpan(candidate, "tts", attempt=attempt) as tts_span:
+            tts_result = _maybe_synthesize_tts(candidate, dry_run=dry_run)
+            tts_span.ok = bool(tts_result.get("ok") or tts_result.get("skipped"))
         worker_result["tts"] = tts_result
         write_json(candidate / "WORKER_RESULT.json", worker_result)
-        render_result = renderer_render(candidate, quality, skip_render=dry_run)
+        with TraceSpan(candidate, "render", attempt=attempt) as render_span:
+            render_result = renderer_render(candidate, quality, skip_render=dry_run)
+            render_span.ok = bool((render_result.get("verification") or {}).get("ok", True))
         final_review = reviewer_review(kp, worker_result, candidate, config, glm)
         verdict = str(final_review.get("verdict", "FIX")).upper()
+        append_trace(candidate, "attempt_verdict", attempt=attempt, verdict=verdict)
 
         if verdict == "PASS":
+            append_progress(candidate, f"PASS on attempt {attempt}")
             break
         if verdict == "INCONCLUSIVE":
             # Does not consume further repair rounds — stop this kp.
+            append_progress(candidate, f"INCONCLUSIVE on attempt {attempt}")
             break
         # FIX → write feedback and continue
         reason = final_review.get("reason") or "Review requested FIX"
@@ -126,6 +159,13 @@ def run_single(
         fix_path.write_text(sanitize_text(reason) + "\n", encoding="utf-8")
         fix_feedback = reason
         write_json(candidate / "FINAL_REVIEW.json", final_review)
+        # Ensure HANDOFF exists for next FIX coder (reviewer usually wrote it)
+        if not (candidate / "HANDOFF.json").is_file():
+            write_handoff_from_review(
+                candidate,
+                final_review=final_review,
+                verification=(render_result.get("verification") if isinstance(render_result, dict) else None),
+            )
 
     delivered = None
     if verdict == "PASS":

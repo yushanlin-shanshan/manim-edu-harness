@@ -9,6 +9,12 @@ from pathlib import Path
 from typing import Any
 
 from ..fsutil import project_root, write_json
+from ..handoff import (
+    append_progress,
+    load_handoff,
+    open_checklist_items,
+    write_kp_checklist,
+)
 from ..zhipu_client import ZhipuClient
 from . import load_prompt, role_system_prompt
 
@@ -130,6 +136,9 @@ class AgentPipeline:
             if beat.get("dialogue_goal"):
                 md.append(f"   - dialogue: {beat['dialogue_goal']}")
         (self.candidate / "PLAN.md").write_text("\n".join(md) + "\n", encoding="utf-8")
+        # Initializer artifact: default-FAIL KP checklist
+        write_kp_checklist(self.candidate, self.request)
+        append_progress(self.candidate, "Planner finished; KP_CHECKLIST.json initialized (all passes=false).")
         return plan
 
     def run_writer(self, plan: dict[str, Any]) -> str:
@@ -260,20 +269,48 @@ class AgentPipeline:
         return audit
 
     def run_fix(self, audit: dict[str, Any], plan: dict[str, Any], script: str) -> list[str]:
+        """Context-reset FIX: short handoff prompt — do NOT reinject full scene bodies."""
         guidance = audit.get("fix_guidance") or "修复审查指出的全部 blockers 与 majors。"
-        existing = []
-        for path in sorted((self.candidate / "scenes").glob("*.py")):
-            if path.name == "__init__.py":
-                continue
-            existing.append(f"### {path.name}\n```python\n{path.read_text(encoding='utf-8')}\n```")
+        handoff = load_handoff(self.candidate)
+        open_items = open_checklist_items(self.candidate)
+        if not handoff:
+            handoff = {
+                "failed_checks": [guidance],
+                "focus_files": ["scenes/episode.py"],
+                "forbidden_rewrites": [
+                    "Do not delete load_and_play_narration / clear_board / safe_move",
+                ],
+                "fix_guidance": guidance,
+                "open_checklist": open_items,
+            }
+        template_path = project_root() / "prompts" / "math_scene_template.py"
+        template_note = (
+            f"Read modular patterns from disk if needed: {template_path.name} "
+            "(do not paste entire prior scene into this reply — rewrite complete module)."
+        )
+        scene_names = [
+            p.name
+            for p in sorted((self.candidate / "scenes").glob("*.py"))
+            if p.name != "__init__.py"
+        ]
         user = (
-            "这是 FIX 轮。根据审查意见重写 Manim 代码。只输出完整 Python 代码块。"
-            "禁止 scipy；尽量不用 numpy；保证 ast.parse 通过。\n\n"
+            "这是 FIX 轮（context reset）。根据 HANDOFF 重写完整 Manim 模块。"
+            "只输出完整 Python 代码块；禁止把旧 scene 全文粘贴进思考。"
+            "禁止 scipy；尽量不用 numpy；保证 ast.parse 通过。"
+            "禁止删除 load_and_play_narration / clear_board / safe_move。\n\n"
+            f"HANDOFF:\n{json.dumps(handoff, ensure_ascii=False, indent=2)}\n\n"
             f"FIX_GUIDANCE:\n{guidance}\n\n"
-            f"AUDIT:\n{json.dumps(audit, ensure_ascii=False, indent=2)}\n\n"
-            f"PLAN:\n{json.dumps(plan, ensure_ascii=False, indent=2)}\n\n"
-            f"SCRIPT:\n{script}\n\n"
-            + "\n\n".join(existing)
+            f"OPEN_CHECKLIST (passes still false):\n"
+            f"{json.dumps(open_items, ensure_ascii=False, indent=2)}\n\n"
+            f"PLAN_TITLE:\n{plan.get('title') or plan.get('summary', '')[:500]}\n\n"
+            f"SCRIPT_HEAD (truncated):\n{script[:2500]}\n\n"
+            f"EXISTING_SCENE_FILES: {scene_names}\n"
+            f"{template_note}\n"
         )
         scenes = self._coder_once(user)
-        return self._ensure_parseable(scenes)
+        scenes = self._ensure_parseable(scenes)
+        append_progress(
+            self.candidate,
+            f"FIX coder finished; scenes={scenes}; focus={handoff.get('failed_checks', [])[:3]}",
+        )
+        return scenes

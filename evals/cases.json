@@ -1,0 +1,27 @@
+{
+  "description": "Minimal eval cases for rule_gate + delivered/golden regression",
+  "cases": [
+    {
+      "id": "delivered-lecturer-derivative",
+      "path": "workspace/delivered/kp-42b9acd719",
+      "require_color_system": false,
+      "notes": "Batch probe PASS; historically missing COLOR_SYSTEM"
+    },
+    {
+      "id": "delivered-pythagoras",
+      "path": "workspace/delivered/kp-9df8d70d63",
+      "require_color_system": true
+    },
+    {
+      "id": "delivered-f-ma",
+      "path": "workspace/delivered/f-ma",
+      "require_color_system": true
+    },
+    {
+      "id": "golden-lecturer-derivative",
+      "path": "goldens/kp-derivative-lecturer-golden",
+      "require_color_system": false,
+      "notes": "Hand golden; may predate COLOR_SYSTEM MUST"
+    }
+  ]
+}

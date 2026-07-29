@@ -212,21 +212,10 @@ class Harness:
             write_json(candidate / "EPISODE.json", episode)
 
     def _adjudicate(self, verification: dict[str, Any], audit: dict[str, Any]) -> str:
-        # Hard code/structure failures force FIX.
-        if not verification.get("ok"):
-            return "FIX"
-        audit_verdict = str(audit.get("verdict", "FIX")).upper()
-        if audit.get("blockers"):
-            return "FIX"
-        if audit_verdict == "FIX":
-            return "FIX"
-        # AST-clean + audit PASS may promote even when LaTeX/FFmpeg missing.
-        # env_blocked alone should not burn repair rounds.
-        if audit_verdict == "PASS" and audit.get("math_ok", True):
-            return "PASS"
-        if verification.get("env_blocked") or audit_verdict == "INCONCLUSIVE":
-            return "INCONCLUSIVE"
-        return "FIX"
+        # Shared policy with batch path (reviewer.adjudicate).
+        from .reviewer import adjudicate
+
+        return adjudicate(verification, audit)
 
     def _promote(self, meta: dict[str, Any]) -> dict[str, Any]:
         run_dir = Path(meta["run_dir"])
