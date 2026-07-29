@@ -16,8 +16,6 @@
      INCONCLUSIVE：暂停等环境
 ```
 
-LLM：**智谱 OpenAPI**，密钥只放环境变量 / 本地 `.env`，禁止提交仓库。
-
 ## 快速开始
 
 ```bash
