@@ -4,8 +4,8 @@
     {
       "id": "delivered-lecturer-derivative",
       "path": "workspace/delivered/kp-42b9acd719",
-      "require_color_system": false,
-      "notes": "Batch probe PASS; historically missing COLOR_SYSTEM"
+      "require_color_system": true,
+      "notes": "COLOR_SYSTEM required in all modes"
     },
     {
       "id": "delivered-pythagoras",
@@ -20,8 +20,8 @@
     {
       "id": "golden-lecturer-derivative",
       "path": "goldens/kp-derivative-lecturer-golden",
-      "require_color_system": false,
-      "notes": "Hand golden; may predate COLOR_SYSTEM MUST"
+      "require_color_system": true,
+      "notes": "Hand golden may predate iron helpers; expected FAIL until refreshed"
     }
   ]
 }

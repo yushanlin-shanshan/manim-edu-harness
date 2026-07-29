@@ -16,6 +16,7 @@ _ROLE_SKILLS: dict[str, tuple[str, ...]] = {
         "visual_safety",
         "narration_tts",
         "layout_aesthetics",
+        "geometry_primitives",
     ),
     "reviewer": ("math_rigor", "visual_safety"),
 }

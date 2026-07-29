@@ -95,12 +95,23 @@ def reviewer_review(
     if not scenes and (candidate / "scenes").is_dir():
         scenes = [p.name for p in sorted((candidate / "scenes").glob("*.py")) if p.name != "__init__.py"]
 
-    require_color = bool((config.get("review_policy") or {}).get("require_color_system", False))
+    policy = config.get("review_policy") or {}
+    require_color = bool(policy.get("require_color_system", True))
+    auto_fix = bool(policy.get("rule_gate_auto_fix", True))
     with TraceSpan(candidate, "rule_gate", require_color_system=require_color) as span:
-        rule_gate = run_rule_gate(candidate, require_color_system=require_color)
+        rule_gate = run_rule_gate(
+            candidate,
+            require_color_system=require_color,
+            auto_fix=auto_fix,
+        )
         span.ok = bool(rule_gate.get("ok"))
+        if rule_gate.get("auto_fix", {}).get("applied"):
+            append_progress(
+                candidate,
+                "Rule gate auto-fix: " + ", ".join(rule_gate["auto_fix"].get("fixes") or []),
+            )
 
-    # Deterministic hard gate — FIX without LLM when iron-law files missing.
+    # Deterministic hard gate — FIX without LLM when iron-law gaps remain after auto_fix.
     if not rule_gate.get("ok"):
         audit = {
             "verdict": "FIX",
@@ -111,6 +122,7 @@ def reviewer_review(
             "fix_guidance": "Rule gate failed: " + "; ".join(rule_gate.get("failures") or []),
             "claims": ["rule_gate"],
             "skipped_llm": True,
+            "auto_fix": rule_gate.get("auto_fix"),
         }
         write_json(candidate / "AUDIT.json", audit)
         verdict = "FIX"

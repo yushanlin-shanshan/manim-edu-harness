@@ -34,7 +34,8 @@ def main(argv: list[str] | None = None) -> int:
     for case in cases_doc.get("cases") or []:
         rel = case["path"]
         path = ROOT / rel
-        require_color = bool(case.get("require_color_system", False))
+        # Default True — keep scorecard aligned with batch review_policy.
+        require_color = bool(case.get("require_color_system", True))
         if not path.is_dir():
             rows.append(
                 {
@@ -46,7 +47,13 @@ def main(argv: list[str] | None = None) -> int:
                 }
             )
             continue
-        result = run_rule_gate(path, require_color_system=require_color, write=False)
+        # Evals measure artifacts as-is (no auto_fix writeback).
+        result = run_rule_gate(
+            path,
+            require_color_system=require_color,
+            write=False,
+            auto_fix=False,
+        )
         rows.append(
             {
                 "id": case.get("id"),

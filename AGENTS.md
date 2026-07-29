@@ -8,6 +8,8 @@ Harness Engineering (Mitchell): when an agent makes a mistake, **engineer the ha
 
 - Shared: `prompts/core.md`
 - Skills: `prompts/skills/` assembled per role via `agents.assemble_constraints`
+- Deterministic gate: `rule_gate.py` (auto-injects missing `COLOR_SYSTEM` / `safe_move` / `clear_board` / narration helpers when `review_policy.rule_gate_auto_fix` is true)
+- `review_policy.require_color_system` defaults **true** in batch + evals (same bar)
 - Index: `prompts/worker.md` (human-readable map; LLM uses core+skills)
 
 ## Root operator

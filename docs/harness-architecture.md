@@ -4,7 +4,7 @@
 
 | Source | Principle | Phase-1 implementation |
 |---|---|---|
-| Mitchell — Engineer the Harness | Mistake → permanent gate/tool | [`rule_gate.py`](../src/manim_edu_harness/rule_gate.py); skills under `prompts/skills/` |
+| Mitchell — Engineer the Harness | Mistake → permanent gate/tool | [`rule_gate.py`](../src/manim_edu_harness/rule_gate.py) (+ auto-inject); skills under `prompts/skills/` |
 | Anthropic — long-running agents | Initializer + incremental handoff | `KP_CHECKLIST.json`, `PROGRESS.md`, `HANDOFF.json` |
 | Anthropic — context anxiety / reset | Fresh context + structured handoff | FIX `run_fix` no longer reinjects full scene bodies |
 | Context engineering | Progressive disclosure | `core.md` + role→skills in `agents/__init__.py` |
@@ -19,8 +19,9 @@ Initializer (planner)
 Builder (writer → coder)
   → scenes + narration
 TTS / Render
-RuleGate (deterministic)
-  → FAIL ⇒ FIX + HANDOFF (no LLM)
+RuleGate (deterministic, `require_color_system=true`)
+  → auto-inject missing COLOR_SYSTEM / safe_move / clear_board / narration helpers
+  → still FAIL ⇒ FIX + HANDOFF (no LLM)
 Evaluator (LLM reviewer, read-only posture)
   → PASS | FIX | INCONCLUSIVE
 FIX round (context reset)

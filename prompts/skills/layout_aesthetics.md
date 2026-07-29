@@ -1,6 +1,6 @@
 # Skill: layout_aesthetics
 
-## COLOR_SYSTEM（推荐 MUST）
+## COLOR_SYSTEM（MUST — batch / rule_gate / eval 统一强制）
 
 ```python
 COLOR_SYSTEM = {

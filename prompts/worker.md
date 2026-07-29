@@ -9,7 +9,7 @@
 |---|---|
 | planner | math_rigor |
 | writer | math_rigor, narration_tts |
-| coder | math_rigor, animation_atomic, visual_safety, narration_tts, layout_aesthetics |
+| coder | math_rigor, animation_atomic, visual_safety, narration_tts, layout_aesthetics, geometry_primitives |
 | reviewer | math_rigor, visual_safety（只评不写；不含长篇动画 API） |
 
 组装逻辑：`agents.assemble_constraints` / `role_system_prompt`。
