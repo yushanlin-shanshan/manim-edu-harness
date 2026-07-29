@@ -18,9 +18,9 @@ def _normalize_kp(kp: dict[str, Any]) -> dict[str, Any]:
     constraints = list(kp.get("constraints") or [])
     # Default hard constraints so batch stays renderable without LaTeX.
     defaults = [
-        "只用 manim Text 与基础几何，禁止 MathTex/Tex/scipy/numpy",
-        "颜色只用 RED/BLUE/GREEN/YELLOW/ORANGE/PURPLE/PINK/WHITE/BLACK/GRAY/TEAL/GOLD",
-        "场景约 80-120 行",
+        "允许 MathTex/Tex；禁止 scipy 与非必要 numpy",
+        "颜色优先 RED/BLUE/GREEN/YELLOW/ORANGE/PURPLE/PINK/WHITE/BLACK/GRAY/GREY/TEAL/GOLD",
+        "阶段间硬清屏；阶段内三态；推导强制展开",
     ]
     for item in defaults:
         if item not in constraints:

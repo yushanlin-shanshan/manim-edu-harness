@@ -21,9 +21,9 @@ def load_worker_constraints() -> str:
 
 
 def role_system_prompt(role: str) -> str:
-    """role prompt + worker.md hard constraints (writer/coder)."""
+    """role prompt + worker.md hard constraints (planner/writer/coder/reviewer)."""
     base = load_prompt(role)
-    if role in {"writer", "coder"}:
+    if role in {"planner", "writer", "coder", "reviewer"}:
         worker = load_worker_constraints()
         if worker:
             return worker + "\n\n---\n\n" + base

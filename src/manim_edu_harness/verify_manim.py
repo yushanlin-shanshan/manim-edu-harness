@@ -107,6 +107,10 @@ def try_manim_render(candidate: Path, module: Path, quality: str = "l") -> tuple
         str(module),
         scene_class,
     ]
+    env = os.environ.copy()
+    texbin = "/Library/TeX/texbin"
+    if Path(texbin).is_dir():
+        env["PATH"] = texbin + os.pathsep + env.get("PATH", "")
     try:
         proc = subprocess.run(
             cmd,
@@ -115,6 +119,7 @@ def try_manim_render(candidate: Path, module: Path, quality: str = "l") -> tuple
             text=True,
             timeout=int(os.environ.get("MANIM_RENDER_TIMEOUT", "240")),
             check=False,
+            env=env,
         )
     except FileNotFoundError:
         return "skipped", "manim CLI not found; AST-only verification used"

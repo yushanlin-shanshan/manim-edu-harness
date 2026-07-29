@@ -13,13 +13,27 @@ from ..zhipu_client import ZhipuClient
 from . import load_prompt, role_system_prompt
 
 
+def _extract_tts_narration(script: str) -> str:
+    for marker in ("## TTS_NARRATION", "## TTS Narration", "## 旁白", "## Narration"):
+        if marker in script:
+            return script.split(marker, 1)[1].strip()
+    return ""
+
+
 def _extract_code_blocks(text: str) -> list[tuple[str, str]]:
     pattern = re.compile(r"```(\w+)?\n(.*?)```", re.DOTALL)
     return [(m.group(1) or "", m.group(2)) for m in pattern.finditer(text)]
 
 
+_CJK_TEX_BOOTSTRAP = """# Auto: CJK-safe MathTex via XeLaTeX (injected by harness)
+_CJ_TEX = TexTemplate(tex_compiler="xelatex", output_format=".xdv")
+_CJ_TEX.add_to_preamble(r"\\usepackage{xeCJK}\\setCJKmainfont{PingFang SC}")
+config.tex_template = _CJ_TEX
+"""
+
+
 def _sanitize_scene_source(src: str) -> str:
-    """Rewrite common invalid Manim color identifiers before save."""
+    """Rewrite common invalid Manim identifiers; inject XeLaTeX if CJK in MathTex."""
     replacements = (
         ("BROWN", '"#8B4513"'),
         ("DARK_BROWN", '"#654321"'),
@@ -29,6 +43,20 @@ def _sanitize_scene_source(src: str) -> str:
     )
     for bad, good in replacements:
         src = re.sub(rf"\b{bad}\b", good, src)
+    has_cjk_tex = bool(
+        re.search(r"(MathTex|Tex)\([\s\S]{0,400}?[\u4e00-\u9fff]", src)
+    )
+    if has_cjk_tex and "config.tex_template = _CJ_TEX" not in src:
+        marker = "from manim import"
+        idx = src.find(marker)
+        if idx >= 0:
+            nl = src.find("\n", idx)
+            if nl >= 0:
+                src = src[: nl + 1] + "\n" + _CJK_TEX_BOOTSTRAP + "\n" + src[nl + 1 :]
+            else:
+                src = src + "\n" + _CJK_TEX_BOOTSTRAP
+        else:
+            src = "from manim import *\n" + _CJK_TEX_BOOTSTRAP + "\n" + src
     return src
 
 
@@ -73,9 +101,10 @@ class AgentPipeline:
         self.request = request
 
     def run_planner(self) -> dict[str, Any]:
-        system = load_prompt("planner")
+        system = role_system_prompt("planner")
         user = (
-            "请为下列知识点设计一集理科短剧讲解方案（JSON）。\n\n"
+            "请为下列知识点设计一集大学讲师级讲解方案（JSON）。"
+            "必须：定义域/条件、无跳跃 derivation_steps、三态 visual、原子动画。\n\n"
             f"{json.dumps(self.request, ensure_ascii=False, indent=2)}"
         )
         plan = self.client.chat_json(
@@ -106,9 +135,11 @@ class AgentPipeline:
     def run_writer(self, plan: dict[str, Any]) -> str:
         system = role_system_prompt("writer")
         user = (
-            "根据规划写完整剧本（Markdown）。必须硬核干货、紧凑逻辑："
-            "定义→条件→分步推导→结论；禁止套话；每句服务 key_points/must_teach。\n"
-            "每个 beat 写明 FadeOut 对象与同屏≤4；公式板书必须分步。\n\n"
+            "根据规划写完整剧本（Markdown）。大学讲师级：定义→定义域/条件→强制展开推导→结论。\n"
+            "阶段之间必须硬清屏（FadeOut 全部 mobjects）；阶段内才用三态变暗。\n"
+            "每分句标注：[原子动画][KP-k]；公式用 TransformMatchingTex。\n"
+            "文末必须另起一节：## TTS_NARRATION\n"
+            "该节为口语旁白（200–450字，适合朗读，约200–300字/分钟；少念生硬公式符号）。\n\n"
             f"REQUEST:\n{json.dumps(self.request, ensure_ascii=False, indent=2)}\n\n"
             f"PLAN:\n{json.dumps(plan, ensure_ascii=False, indent=2)}"
         )
@@ -118,8 +149,28 @@ class AgentPipeline:
                 {"role": "user", "content": user},
             ]
         )
-        (self.candidate / "SCRIPT.md").write_text(script.strip() + "\n", encoding="utf-8")
+        script = script.strip() + "\n"
+        (self.candidate / "SCRIPT.md").write_text(script, encoding="utf-8")
+        narration = _extract_tts_narration(script)
+        if not narration:
+            narration = self._narration_fallback(plan, script)
+        (self.candidate / "narration.md").write_text(narration.strip() + "\n", encoding="utf-8")
         return script
+
+    def _narration_fallback(self, plan: dict[str, Any], script: str) -> str:
+        system = role_system_prompt("writer")
+        user = (
+            "只输出口语旁白正文（不要 Markdown 标题以外的格式），200–450 汉字，"
+            "按 Setup/Derivation/Conclusion 分段空行，适合 TTS 朗读。\n\n"
+            f"PLAN:\n{json.dumps(plan, ensure_ascii=False, indent=2)}\n\n"
+            f"SCRIPT:\n{script[:6000]}"
+        )
+        return self.client.chat(
+            [
+                {"role": "system", "content": system},
+                {"role": "user", "content": user},
+            ]
+        )
 
     def _coder_once(self, user: str) -> list[str]:
         system = role_system_prompt("coder")
@@ -158,14 +209,14 @@ class AgentPipeline:
             # Keep prompt bounded but include modular-method patterns.
             template_hint = (
                 "\n\nREFERENCE_TEMPLATE (mirror modular phases + actor lifecycle):\n"
-                f"```python\n{template_path.read_text(encoding='utf-8')[:5500]}\n```\n"
+                f"```python\n{template_path.read_text(encoding='utf-8')[:9000]}\n```\n"
             )
         user = (
             "根据规划与剧本生成 ManimCommunity 场景。只输出 Python；类名 EpisodeScene。\n"
-            "铁律：construct 只编排；拆 setup/derivation/conclusion + clear_stage；"
-            "演员进场-表演-FadeOut；顶/主/辅分区；标题字号48-60、公式36-42；"
-            "单句一帧；长公式分步；每次play后wait(0.5~1)；阶段间wait(1)；"
-            "禁止废话与scipy/numpy。\n\n"
+            "大学讲师级+电影感：文件头 COLOR_SYSTEM/FONT_SIZES/ANIMATION_DURATIONS；"
+            "阶段硬清屏；左主右辅布局；MathTex=primary、说明=secondary、变暗=background_dim；"
+            "强制展开+TransformMatchingTex；FadeIn/Transform 用 smooth；禁随机色与 MathTex 中文；"
+            "可 add_sound('narration.wav')。\n\n"
             f"REQUEST:\n{json.dumps(self.request, ensure_ascii=False, indent=2)}\n\n"
             f"PLAN:\n{json.dumps(plan, ensure_ascii=False, indent=2)}\n\n"
             f"SCRIPT:\n{script}"
@@ -181,14 +232,16 @@ class AgentPipeline:
         scene_files: list[str],
         verification: dict[str, Any],
     ) -> dict[str, Any]:
-        system = load_prompt("reviewer")
+        system = role_system_prompt("reviewer")
         scene_blobs = []
         for name in scene_files:
             path = self.candidate / "scenes" / name
             if path.is_file():
                 scene_blobs.append(f"### {name}\n```python\n{path.read_text(encoding='utf-8')}\n```")
         user = (
-            "审查本集短剧候选产物。返回 JSON："
+            "审查本集候选产物。返回 JSON。"
+            "重要：env_blocked/缺LaTeX不是blocker；先读场景源码再判 KP/三态/原子化；"
+            "仅 minors→PASS；数学错或铁律硬伤→FIX。\n"
             '{"verdict":"PASS|FIX|INCONCLUSIVE","blockers":[],"majors":[],"minors":[],'
             '"math_ok":true,"claims":[],"fix_guidance":""}\n\n'
             f"REQUEST:\n{json.dumps(self.request, ensure_ascii=False, indent=2)}\n\n"

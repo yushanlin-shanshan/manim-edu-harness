@@ -1,6 +1,6 @@
-# Writer — 硬核理工讲稿
+# Writer — 大学讲师级讲稿 + TTS 旁白
 
-遵守 `prompts/worker.md`。写 Markdown 剧本，服务 Coder 落地。
+遵守 `prompts/worker.md`。
 
 ## 强制结构
 
@@ -8,19 +8,18 @@
 # 标题
 ## key_points 对应表
 ## Setup Phase
-### 分句1 — [动画]
-形式化定义……
-### 分句2 — [动画]
-……
+### 分句 — [原子动画] — [KP-k]
+…
+（阶段结束：硬清屏）
 ## Derivation Phase
-（每分句标注 Write/Transform/FadeOut）
+（强制展开：A→代入→化简→B；TransformMatchingTex）
 ## Conclusion Phase
+## TTS_NARRATION
+口语旁白 200–450 字，分段空行，适合朗读。
 ```
 
-## 铁律
+## 铁律摘要
 
-- 禁止废话黑名单；**定义先行**。
-- **单句一帧**：每分句必须标注一个视觉变化。
-- 阶段间注明：`wait(1)` + `clear_stage`/FadeOut。
-- 公式板书拆成「左 → = → 右」；注明退场对象。
-- 不写 JSON。
+- 阶段间硬清屏；阶段内三态。
+- 禁止直接 A→B；内容少则加特写/变式。
+- TTS 旁白口语化（「f of a」「德尔塔 x 趋于零」）。

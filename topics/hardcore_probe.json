@@ -14,8 +14,9 @@
         "结论：a^2 + b^2 = c^2"
       ],
       "must_teach": [
-        "定义先行；Setup→Derivation→Conclusion",
-        "construct 拆子方法；演员退场；单句一帧；公式分步"
+        "MathTex 形式化 + 定义域/条件；# [KP-k]",
+        "无跳跃推导；TransformMatchingTex",
+        "三态：活跃/背景变暗/离场；原子化 play≤2"
       ]
     },
     {
@@ -32,7 +33,9 @@
         "切线方程：y-f(a)=f'(a)(x-a)"
       ],
       "must_teach": [
-        "定义先行；三阶段模块化；FadeOut 生命周期；顶主辅分区"
+        "MathTex 形式化 + 定义域/条件；# [KP-k]",
+        "无跳跃推导；TransformMatchingTex；ValueTracker 割线逼近",
+        "三态：活跃/背景变暗/离场；原子化 play≤2"
       ]
     }
   ]

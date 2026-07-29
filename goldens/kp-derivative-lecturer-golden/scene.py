@@ -12,7 +12,6 @@ Requires LaTeX (MathTex). Render:
 """
 
 from manim import *
-import os
 
 
 class EpisodeScene(Scene):
@@ -20,69 +19,11 @@ class EpisodeScene(Scene):
 
     def construct(self):
         self.setup_phase()
-        self.clear_board()  # 超级规则〇：Setup 结束清板
+        self.wait(1)
         self.derivation_phase()
-        self.clear_board()  # Derivation 结束清板
+        self.wait(1)
         self.conclusion_phase()
         self.wait(1)
-
-        # >>> 强制加载音频 (不要删!) <<<
-        # 放在动画末尾；内部用 time_offset 钉到 t=0，保证一开播就有声
-        self.load_and_play_narration()
-        self.pad_to_narration_length()
-
-    def load_and_play_narration(self):
-        """自动加载同目录 narration.wav 并挂到时间线起点。禁止删除。"""
-        import wave
-
-        self._narration_duration = 0.0
-        audio_file = "narration.wav"
-        if not os.path.exists(audio_file):
-            print(f"⚠️ [Audio] File not found: {audio_file}")
-            return
-
-        with wave.open(audio_file, "rb") as wf:
-            self._narration_duration = wf.getnframes() / float(wf.getframerate())
-
-        # 缓存回放后 skip_animations 可能仍为 True，会导致 add_sound 静默跳过
-        was_skip = getattr(self.renderer, "skip_animations", False)
-        self.renderer.skip_animations = False
-        try:
-            # 末尾调用：用负偏移钉到 t=0，保证一开播就有声
-            offset = -float(self.time)
-            self.add_sound(audio_file, time_offset=offset)
-        finally:
-            self.renderer.skip_animations = was_skip
-
-        print(f"✅ [Audio] Loaded: {audio_file} (t0 via offset={offset:.3f})")
-
-    def pad_to_narration_length(self):
-        """画面短于旁白时补 wait，误差目标 < 3s。"""
-        extra = getattr(self, "_narration_duration", 0.0) - self.time
-        if extra > 0.05:
-            self.wait(extra)
-
-    def safe_move(self, mobj, target_point):
-        """防止对象移出画面边界。如果目标坐标超出安全区域，强行拉回边缘。"""
-        # Manim 默认相机高度约为 8.0 (Y轴范围 -4 到 4)
-        # 安全区域取 3.5 (上下留白)
-        SAFE_Y = 3.5
-        SAFE_X = 6.5  # 假设 16:9 比例
-        x, y, z = target_point
-        new_y = max(min(y, SAFE_Y), -SAFE_Y)
-        new_x = max(min(x, SAFE_X), -SAFE_X)
-        mobj.move_to([new_x, new_y, z])
-
-    def clear_board(self):
-        """清除屏幕上所有可移除对象。必须在每个大章节结束时调用。"""
-        all_mobjects = list(self.mobjects)
-        if all_mobjects:
-            self.play(
-                *[FadeOut(mob) for mob in all_mobjects],
-                run_time=0.5,
-                lag_ratio=0.1,
-            )
-            self.wait(0.2)
 
     # ------------------------------------------------------------------
     # Setup — 定义域、条件、极限定义式
@@ -143,20 +84,20 @@ class EpisodeScene(Scene):
     # ------------------------------------------------------------------
     def derivation_phase(self):
         # [KP-2][KP-3]
-        # 清板后重建上下文（勿依赖 Setup 残留 mobject）
+        # 旧标题离场，新步骤标题活跃
+        self.play(FadeOut(self._title))
+        self.wait(0.5)
+
         step = Text("Derivation: secant → tangent", font_size=48, color=WHITE)
         step.to_edge(UP)
         self.play(Write(step))
         self.wait(0.6)
 
-        ctx = MathTex(
-            r"f'(a)=\lim_{\Delta x \to 0}\frac{f(a+\Delta x)-f(a)}{\Delta x}",
-            font_size=28,
-            color=GREY,
-        )
-        ctx.to_corner(UL).set_opacity(0.35)
-        self.play(FadeIn(ctx))
-        self.wait(0.45)
+        # 定义式转背景态，作为上下文
+        self.play(self._definition.animate.set_opacity(0.3).scale(0.85).to_corner(UL))
+        self.wait(0.6)
+        self.play(self._condition.animate.set_opacity(0.0))
+        self.wait(0.4)
 
         # 坐标系与曲线（相对布局）
         axes = Axes(
@@ -295,21 +236,37 @@ class EpisodeScene(Scene):
         self.play(Indicate(result))
         self.wait(0.7)
 
-        # 本阶段局部对象在 clear_board 时离场；Conclusion 自包含重建
+        self._axes = axes
+        self._graph = graph
+        self._point_group = point_group
+        self._tangent = tangent
+        self._result = result
+        self._lim_expr = lim_expr
+        self._step = step
 
     # ------------------------------------------------------------------
-    # Conclusion — 切线方程（清板后自包含，不依赖上一阶段引用）
+    # Conclusion — 切线方程
     # ------------------------------------------------------------------
     def conclusion_phase(self):
         # [KP-4]
+        self.play(FadeOut(self._step))
+        self.wait(0.5)
+        self.play(FadeOut(self._lim_expr))
+        self.wait(0.4)
+
+        # 图形转背景，给公式让出焦点
+        self.play(self._axes.animate.set_opacity(0.25))
+        self.wait(0.4)
+        self.play(self._graph.animate.set_opacity(0.25))
+        self.wait(0.4)
+        self.play(self._point_group.animate.set_opacity(0.35))
+        self.wait(0.4)
+        self.play(self._tangent.animate.set_color(YELLOW))
+        self.wait(0.5)
+
         concl = Text("Conclusion", font_size=52, color=YELLOW)
         concl.to_edge(UP)
         self.play(Write(concl))
-        self.wait(0.55)
-
-        result = MathTex(r"f'(a)=m_{\mathrm{tan}}", font_size=40, color=WHITE)
-        result.next_to(concl, DOWN, buff=0.45)
-        self.play(Write(result))
         self.wait(0.55)
 
         # 切线方程分步（原子化）
@@ -319,7 +276,7 @@ class EpisodeScene(Scene):
         eq.next_to(left, RIGHT, buff=0.25)
         right.next_to(eq, RIGHT, buff=0.25)
         line = VGroup(left, eq, right)
-        line.next_to(result, DOWN, buff=0.55)
+        line.next_to(concl, DOWN, buff=0.55)
 
         self.play(Write(left))
         self.wait(0.5)
@@ -341,5 +298,6 @@ class EpisodeScene(Scene):
         self.play(FadeIn(meaning))
         self.wait(1.0)
 
-        self.play(Indicate(result))
+        # 与结果式做匹配强调（几何意义）
+        self.play(Indicate(self._result))
         self.wait(0.8)
