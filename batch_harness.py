@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """Prompt 03 — Root orchestrator: batch Manim edu short-drama production.
 
-Wires worker → renderer → reviewer into a FIX/PASS/INCONCLUSIVE loop,
-isolates per-knowledge-point failures, and writes sanitized final reports.
+Wires worker → rule_gate(auto_fix) → renderer → reviewer into a FIX/PASS/INCONCLUSIVE
+loop, isolates per-knowledge-point failures, and writes sanitized final reports.
 """
 
 from __future__ import annotations
@@ -27,6 +27,7 @@ from manim_edu_harness.glm_client import GLMClient, MockGLMClient  # noqa: E402
 from manim_edu_harness.handoff import append_progress, write_handoff_from_review  # noqa: E402
 from manim_edu_harness.renderer import renderer_render  # noqa: E402
 from manim_edu_harness.reviewer import reviewer_review  # noqa: E402
+from manim_edu_harness.rule_gate import pre_render_rule_gate  # noqa: E402
 from manim_edu_harness.textutil import sanitize_text, slugify  # noqa: E402
 from manim_edu_harness.trace import TraceSpan, append_trace  # noqa: E402
 from manim_edu_harness.tts_generator import synthesize_narration_file  # noqa: E402
@@ -139,9 +140,52 @@ def run_single(
             tts_span.ok = bool(tts_result.get("ok") or tts_result.get("skipped"))
         worker_result["tts"] = tts_result
         write_json(candidate / "WORKER_RESULT.json", worker_result)
-        with TraceSpan(candidate, "render", attempt=attempt) as render_span:
-            render_result = renderer_render(candidate, quality, skip_render=dry_run)
-            render_span.ok = bool((render_result.get("verification") or {}).get("ok", True))
+
+        # Pre-render gate: check → auto_fix → then render (avoid wasted NameError rounds).
+        policy = config.get("review_policy") or {}
+        require_color = bool(policy.get("require_color_system", True))
+        do_pre = bool(policy.get("rule_gate_pre_render", True))
+        do_autofix = bool(policy.get("rule_gate_auto_fix", True))
+        if do_pre:
+            with TraceSpan(candidate, "rule_gate_pre_render", attempt=attempt) as gate_span:
+                pre_gate = pre_render_rule_gate(
+                    candidate,
+                    require_color_system=require_color,
+                    auto_fix=do_autofix,
+                )
+                gate_span.ok = bool(pre_gate.get("ok"))
+                worker_result["rule_gate_pre_render"] = {
+                    "ok": pre_gate.get("ok"),
+                    "failures": pre_gate.get("failures") or [],
+                    "auto_fix": pre_gate.get("auto_fix") or {},
+                }
+                write_json(candidate / "WORKER_RESULT.json", worker_result)
+        else:
+            pre_gate = {"ok": True}
+
+        if do_pre and not pre_gate.get("ok"):
+            # Doomed Manim API / iron-law gaps — skip render, let reviewer hard-FIX.
+            print("[Rule Gate] Pre-render failed; skipping Manim render this attempt")
+            render_result = {
+                "ok": False,
+                "verification": {
+                    "ok": False,
+                    "render_status": "skipped_rule_gate",
+                    "errors": list(pre_gate.get("failures") or []),
+                },
+                "video": None,
+                "quality": quality,
+                "dry_run": dry_run,
+                "skipped_rule_gate": True,
+            }
+            write_json(candidate / "RENDER_RESULT.json", render_result)
+            write_json(candidate / "VERIFICATION.json", render_result["verification"])
+            with TraceSpan(candidate, "render", attempt=attempt) as render_span:
+                render_span.ok = False
+        else:
+            with TraceSpan(candidate, "render", attempt=attempt) as render_span:
+                render_result = renderer_render(candidate, quality, skip_render=dry_run)
+                render_span.ok = bool((render_result.get("verification") or {}).get("ok", True))
         final_review = reviewer_review(kp, worker_result, candidate, config, glm)
         verdict = str(final_review.get("verdict", "FIX")).upper()
         append_trace(candidate, "attempt_verdict", attempt=attempt, verdict=verdict)

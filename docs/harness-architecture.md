@@ -18,9 +18,11 @@ Initializer (planner)
   → KP_CHECKLIST (passes=false) + PROGRESS
 Builder (writer → coder)
   → scenes + narration
-TTS / Render
-RuleGate (deterministic, `require_color_system=true`)
-  → auto-inject missing COLOR_SYSTEM / safe_move / clear_board / narration helpers
+TTS
+RuleGate pre-render (deterministic, `require_color_system=true`)
+  → check_scene_rules → auto-inject COLOR_SYSTEM / safe_move / clear_board / narration / KP / conclusion_phase
+Render
+RuleGate post-render check (no re-inject when pre-render enabled)
   → still FAIL ⇒ FIX + HANDOFF (no LLM)
 Evaluator (LLM reviewer, read-only posture)
   → PASS | FIX | INCONCLUSIVE

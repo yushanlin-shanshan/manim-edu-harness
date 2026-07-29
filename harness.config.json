@@ -39,6 +39,7 @@
     "require_color_system": true,
     "require_safe_move": true,
     "rule_gate_auto_fix": true,
+    "rule_gate_pre_render": true,
     "max_dynamic_checks": 8,
     "per_check_timeout_seconds": 600,
     "total_check_timeout_seconds": 1800,

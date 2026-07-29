@@ -164,6 +164,8 @@ def check_scene_rules(source: str, *, require_color_system: bool = True) -> list
         failures.append("clear_board must not call renderer.update_frame")
     if re.search(r"\.get_point\s*\(", source):
         failures.append("use axes.i2gp/c2p instead of graph.get_point(...)")
+    if re.search(r"\.set_color\s*\(", source):
+        failures.append("forbid .set_color(); pass color=/stroke_color=/fill_color= at construction (or use set_stroke/set_fill)")
     if re.search(r"(UP|DOWN)\s*\*\s*[4-9]", source) or re.search(
         r"(LEFT|RIGHT)\s*\*\s*[7-9]", source
     ):
@@ -324,6 +326,8 @@ def auto_fix_scene_source(source: str, *, require_color_system: bool = True) -> 
     # Soft rewrite: get_point → comment warning only (cannot safely rewrite call sites)
     if re.search(r"\.get_point\s*\(", out):
         print("[Rule Gate] Detected graph.get_point(...); FIX handoff should use axes.i2gp/c2p")
+    if re.search(r"\.set_color\s*\(", out):
+        print("[Rule Gate] Detected .set_color(...); FIX handoff should use constructor color=/set_fill")
 
     return out, fixes
 
@@ -353,8 +357,42 @@ def auto_fix_candidate(
             "reason": f"syntax error after auto_fix: {exc.msg}",
         }
     path.write_text(fixed if fixed.endswith("\n") else fixed + "\n", encoding="utf-8")
+    # Keep flat scene.py in sync when it is a separate copy of the primary module.
+    alias = Path(candidate) / "scene.py"
+    if alias.is_file() and alias.resolve() != path.resolve():
+        alias.write_text(path.read_text(encoding="utf-8"), encoding="utf-8")
     print(f"[Rule Gate] Auto-fixed missing functions: {', '.join(fixes)}")
     return {"applied": True, "fixes": fixes, "path": str(path)}
+
+
+def pre_render_rule_gate(
+    candidate: Path,
+    *,
+    require_color_system: bool = True,
+    auto_fix: bool = True,
+) -> dict[str, Any]:
+    """Run check → auto_fix **before** Manim render (saves wasted FIX rounds).
+
+    Intended order: worker → tts → pre_render_rule_gate → render → reviewer(check-only).
+    """
+    result = run_rule_gate(
+        candidate,
+        require_color_system=require_color_system,
+        write=True,
+        auto_fix=auto_fix,
+    )
+    if result.get("auto_fix", {}).get("applied"):
+        fixes = ", ".join(result["auto_fix"].get("fixes") or [])
+        print(f"[Rule Gate] Pre-render auto-fix applied: {fixes}")
+        from .handoff import append_progress
+
+        append_progress(candidate, f"Rule gate pre-render auto-fix: {fixes}")
+    elif not result.get("ok"):
+        print(
+            "[Rule Gate] Pre-render check failed (not auto-fixable): "
+            + "; ".join(result.get("failures") or [])
+        )
+    return result
 
 
 def _checks_dict(source: str) -> dict[str, bool]:

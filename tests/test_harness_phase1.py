@@ -70,6 +70,7 @@ class ProgressiveDisclosureTests(unittest.TestCase):
         c = assemble_constraints("coder")
         self.assertIn("RightAngle", c)
         self.assertIn("vertices=", c)  # documents the BAD pattern
+        self.assertIn("set_color", c)  # documents forbidden pattern
         self.assertIn("TransformMatchingTex", c)
         self.assertIn(r"\nabla", c)
 
@@ -137,6 +138,11 @@ class EpisodeScene(Scene):
         fails = check_scene_rules(src)
         self.assertTrue(any("conclusion_phase" in f for f in fails))
 
+    def test_set_color_forbidden(self) -> None:
+        bad = MINIMAL_OK + "\n    def foo(self):\n        Square().set_color(RED)\n"
+        fails = check_scene_rules(bad)
+        self.assertTrue(any("set_color" in f for f in fails))
+
     def test_run_rule_gate_auto_fix_writes(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
@@ -157,6 +163,20 @@ class EpisodeScene(Scene):
             result = run_rule_gate(root, write=True)
             self.assertTrue(result["ok"])
             self.assertTrue((root / "RULE_GATE.json").is_file())
+
+    def test_pre_render_rule_gate_autofix(self) -> None:
+        from manim_edu_harness.rule_gate import pre_render_rule_gate
+
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            (root / "scenes").mkdir()
+            (root / "scenes" / "episode.py").write_text(MINIMAL_MISSING, encoding="utf-8")
+            result = pre_render_rule_gate(root, auto_fix=True, require_color_system=True)
+            self.assertTrue(result["ok"], result.get("failures"))
+            self.assertTrue(result.get("auto_fix", {}).get("applied"))
+            text = (root / "scenes" / "episode.py").read_text(encoding="utf-8")
+            self.assertIn("COLOR_SYSTEM", text)
+            self.assertIn("def conclusion_phase", text)
 
 
 if __name__ == "__main__":

@@ -9,6 +9,40 @@ Manim CE 几何 API 速查。勾股 / 直角三角形场景必须按此写法，
 Triangle(vertices=[...])
 Polygon(vertices=[...])  # Polygon 用 *points，不是 vertices=
 RightAngle(p1, p2, p3)   # 不是三点；需要两条 Line
+
+# BAD — 不要事后 .set_color()（易触发 API/透明度错误）
+square = Square()
+square.set_color(RED)  # 禁止！
+```
+
+## 颜色：构造时指定（MUST）
+
+```python
+# ✅ 方式 1：构造时指定 color
+square = Square(side_length=2, color=COLOR_SYSTEM["primary"], stroke_width=2)
+
+# ✅ 方式 2：分别设置描边 / 填充
+square = Square(
+    side_length=2,
+    stroke_color=COLOR_SYSTEM["primary"],
+    fill_color=COLOR_SYSTEM["accent"],
+    fill_opacity=0.3,
+)
+
+# ✅ 方式 3：需要改色时用 set_stroke / set_fill，不要 set_color
+square.set_stroke(COLOR_SYSTEM["warning"], width=3)
+square.set_fill(COLOR_SYSTEM["accent"], opacity=0.25)
+```
+
+## Square / 外正方形组合
+
+```python
+outer = Square(side_length=a + b, color=COLOR_SYSTEM["neutral"], stroke_width=3)
+inner = Square(side_length=c, color=COLOR_SYSTEM["accent"], fill_opacity=0.2)
+group = VGroup(
+    Square(color=COLOR_SYSTEM["primary"]),
+    Square(color=COLOR_SYSTEM["secondary"]).shift(RIGHT * 2),
+)
 ```
 
 ## 直角三角形（推荐）
@@ -38,5 +72,6 @@ def make_right_triangle(a: float = 3.0, b: float = 2.0) -> VGroup:
 
 ## 外正方形面积证明布局提示
 
-- 用 `Polygon` / `Square` + `next_to` / `safe_move`；整块 `VGroup.scale(...).move_to(ORIGIN)`。
+- 用 `Polygon` / `Square(color=...)` + `next_to` / `safe_move`；整块 `VGroup.scale(...).move_to(ORIGIN)`。
+- 边长直接给定，不要在动画里用勾股反推斜边再当输入。
 - 推导公式用 `MathTex` + `TransformMatchingTex`；阶段结束 `clear_board()`。

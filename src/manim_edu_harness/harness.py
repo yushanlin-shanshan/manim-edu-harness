@@ -148,6 +148,16 @@ class Harness:
         while True:
             meta["phase"] = "verify"
             self._persist(meta)
+            # Pre-render iron-law inject (same order as batch_harness).
+            policy = self.config.get("review_policy") or {}
+            if bool(policy.get("rule_gate_pre_render", True)):
+                from .rule_gate import pre_render_rule_gate
+
+                pre_render_rule_gate(
+                    candidate,
+                    require_color_system=bool(policy.get("require_color_system", True)),
+                    auto_fix=bool(policy.get("rule_gate_auto_fix", True)),
+                )
             verification = verify_candidate(candidate, attempt_render=True)
             write_json(candidate / "VERIFICATION.json", verification)
             write_json(
