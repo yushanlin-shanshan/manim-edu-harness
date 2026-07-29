@@ -16,8 +16,6 @@ topic / batch queue
      INCONCLUSIVE: pause until environment recovers
 ```
 
-LLM backend: **Zhipu (智谱) OpenAPI** via `ZHIPU_API_KEY` (never commit secrets).
-
 ## Quick start
 
 ```bash
