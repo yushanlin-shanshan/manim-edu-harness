@@ -22,6 +22,7 @@ COLOR_SYSTEM = {"primary": BLUE}
 class EpisodeScene(Scene):
     def construct(self):
         # [KP-1]
+        # [KP-2]
         self.setup_phase()
         self.clear_board()
         self.load_and_play_narration()
@@ -45,10 +46,14 @@ from manim import *
 
 class EpisodeScene(Scene):
     def construct(self):
-        # [KP-1]
         self.setup_phase()
+        self.derivation_phase()
+        self.conclusion_phase()
 
     def setup_phase(self):
+        pass
+
+    def derivation_phase(self):
         pass
 '''
 
@@ -65,6 +70,8 @@ class ProgressiveDisclosureTests(unittest.TestCase):
         c = assemble_constraints("coder")
         self.assertIn("RightAngle", c)
         self.assertIn("vertices=", c)  # documents the BAD pattern
+        self.assertIn("TransformMatchingTex", c)
+        self.assertIn(r"\nabla", c)
 
     def test_reviewer_excludes_narration_skill_blob(self) -> None:
         r = assemble_constraints("reviewer")
@@ -98,8 +105,37 @@ class RuleGateTests(unittest.TestCase):
         self.assertIn("safe_move", labels)
         self.assertIn("clear_board", labels)
         self.assertIn("load_and_play_narration", labels)
+        self.assertIn("conclusion_phase", labels)
+        self.assertIn("KP anchors", labels)
         self.assertEqual(check_scene_rules(fixed, require_color_system=True), [])
         self.assertIn("def safe_move", fixed)
+        self.assertIn("def conclusion_phase", fixed)
+
+    def test_missing_conclusion_phase_fails(self) -> None:
+        src = '''
+from manim import *
+COLOR_SYSTEM = {"primary": BLUE}
+class EpisodeScene(Scene):
+    def construct(self):
+        # [KP-1]
+        # [KP-2]
+        self.setup_phase()
+        self.derivation_phase()
+        self.load_and_play_narration()
+    def clear_board(self):
+        pass
+    def safe_move(self, mobj, target_point):
+        SAFE_Y = 3.5
+        mobj.move_to(target_point)
+    def load_and_play_narration(self):
+        pass
+    def setup_phase(self):
+        pass
+    def derivation_phase(self):
+        pass
+'''
+        fails = check_scene_rules(src)
+        self.assertTrue(any("conclusion_phase" in f for f in fails))
 
     def test_run_rule_gate_auto_fix_writes(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
