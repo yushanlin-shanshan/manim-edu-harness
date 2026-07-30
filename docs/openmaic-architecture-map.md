@@ -21,8 +21,8 @@ We do **not** copy stage UI, whiteboard, OpenClaw skill, or PBL. We copy **contr
 | `lib/prompts` (templates + `{{snippet:}}` + `{{#if}}`) | File-based progressive prompts; missing snippet fails loud | `prompt_loader.py` + `prompts/snippets/` |
 | Two-stage generation (`outline` → `content` → `actions`) | Separate planning from rendering details | Already: planner → writer → coder; keep stage boundaries in HANDOFF |
 | `generation-retry.ts` | Retryable vs non-retryable; exponential backoff; abort-aware | `generation_retry.py` wired in `batch_harness.py` |
-| Director graph (single control plane) | One topology bounds the loop | Phase-2: unify `batch_harness` + `Harness` (still open) |
-| `eval/orchestration` (pre-fix / post-fix prompt variants) | Prompt change must discriminate on scenarios | Extend `evals/` with variant hooks (scaffold) |
+| `eval/orchestration` (pre-fix / post-fix prompt variants) | Prompt change must discriminate on scenarios | `scripts/run_eval_variants.py` + `evals/variants/` |
+| Director graph (single control plane) | One topology bounds the loop | Partial: Harness now shares TRACE/HANDOFF/checklist/skip-render with batch; full merge still Phase-2 |
 | Agent allowlist / tool schemas | Deterministic capability bounds | Already: `rule_gate.py` iron laws |
 | Conversation summarizers | Compact context before next turn | Already: `HANDOFF.json` (strengthen checklist progression) |
 | Skills (`skills/openmaic/SKILL.md`) | ClawHub-style packaged skills | Phase-2 skill registry (planned) |
@@ -35,6 +35,8 @@ We do **not** copy stage UI, whiteboard, OpenClaw skill, or PBL. We copy **contr
 2. **Structured retry** — network/429 retry without “wipe and regenerate fully”.
 3. **`.set_color` auto-rewrite** — Mitchell: gate must *fix*, not only forbid (template contradiction removed).
 4. **KP checklist progression** — on adjudicated PASS, flip `passes=true` with evidence.
+5. **Harness ↔ batch shared contracts** — TRACE, HANDOFF on FIX, checklist on PASS, skip render when pre-gate fails.
+6. **Eval variants** — `python scripts/run_eval_variants.py` pre_fix vs post_fix discrimination.
 
 ## Explicit non-goals
 
@@ -48,4 +50,5 @@ We do **not** copy stage UI, whiteboard, OpenClaw skill, or PBL. We copy **contr
 python -c "from manim_edu_harness.prompt_loader import build_text; print('ok', 'set_fill' in build_text('skills/geometry_primitives.md', {}))"
 python -c "from manim_edu_harness.generation_retry import is_retryable_generation_error; print(is_retryable_generation_error(TimeoutError('x')))"
 python scripts/run_evals.py
+python scripts/run_eval_variants.py
 ```

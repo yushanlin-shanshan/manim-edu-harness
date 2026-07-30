@@ -21,6 +21,8 @@ from .fsutil import (
     read_json,
     write_json,
 )
+from .handoff import append_progress, mark_checklist_passed, write_handoff_from_review
+from .trace import TraceSpan, append_trace
 from .verify_manim import verify_candidate
 from .zhipu_client import ZhipuClient
 
@@ -148,17 +150,34 @@ class Harness:
         while True:
             meta["phase"] = "verify"
             self._persist(meta)
-            # Pre-render iron-law inject (same order as batch_harness).
             policy = self.config.get("review_policy") or {}
-            if bool(policy.get("rule_gate_pre_render", True)):
+            require_color = bool(policy.get("require_color_system", True))
+            do_pre = bool(policy.get("rule_gate_pre_render", True))
+            do_autofix = bool(policy.get("rule_gate_auto_fix", True))
+            pre_gate: dict[str, Any] = {"ok": True}
+            if do_pre:
                 from .rule_gate import pre_render_rule_gate
 
-                pre_render_rule_gate(
-                    candidate,
-                    require_color_system=bool(policy.get("require_color_system", True)),
-                    auto_fix=bool(policy.get("rule_gate_auto_fix", True)),
-                )
-            verification = verify_candidate(candidate, attempt_render=True)
+                with TraceSpan(candidate, "rule_gate_pre_render", round=meta["review_round"]) as gate_span:
+                    pre_gate = pre_render_rule_gate(
+                        candidate,
+                        require_color_system=require_color,
+                        auto_fix=do_autofix,
+                    )
+                    gate_span.ok = bool(pre_gate.get("ok"))
+
+            if do_pre and not pre_gate.get("ok"):
+                verification = {
+                    "ok": False,
+                    "render_status": "skipped_rule_gate",
+                    "errors": list(pre_gate.get("failures") or []),
+                    "skipped_rule_gate": True,
+                }
+                append_trace(candidate, "render", ok=False, skipped_rule_gate=True)
+            else:
+                with TraceSpan(candidate, "verify_render", round=meta["review_round"]) as verify_span:
+                    verification = verify_candidate(candidate, attempt_render=True)
+                    verify_span.ok = bool(verification.get("ok", False))
             write_json(candidate / "VERIFICATION.json", verification)
             write_json(
                 candidate / "WORKER_RESULT.json",
@@ -170,21 +189,30 @@ class Harness:
                     ],
                     "scenes": scenes,
                     "verification_ok": verification.get("ok", False),
+                    "rule_gate_pre_render": {
+                        "ok": pre_gate.get("ok"),
+                        "failures": pre_gate.get("failures") or [],
+                        "auto_fix": pre_gate.get("auto_fix") or {},
+                    },
                 },
             )
 
             meta["phase"] = "review"
             meta["status"] = "REVIEWING"
             self._persist(meta)
-            audit = pipe.run_reviewer(plan, script, scenes, verification)
-            verdict = self._adjudicate(verification, audit)
+            with TraceSpan(candidate, "review", round=meta["review_round"]) as review_span:
+                audit = pipe.run_reviewer(plan, script, scenes, verification)
+                verdict = self._adjudicate(verification, audit)
+                review_span.ok = verdict == "PASS"
             final = {
                 "verdict": verdict,
                 "verification_ok": verification.get("ok", False),
                 "audit_verdict": audit.get("verdict"),
                 "review_round": meta["review_round"],
+                "reason": audit.get("fix_guidance") or audit.get("reason") or "",
             }
             write_json(candidate / "FINAL_REVIEW.json", final)
+            append_trace(candidate, "attempt_verdict", round=meta["review_round"], verdict=verdict)
             round_dir = run_dir / "iterations" / f"{meta['review_round']:02d}"
             round_dir.mkdir(parents=True, exist_ok=True)
             for name in (
@@ -192,22 +220,42 @@ class Harness:
                 "AUDIT.json",
                 "FINAL_REVIEW.json",
                 "WORKER_RESULT.json",
+                "HANDOFF.json",
+                "RULE_GATE.json",
             ):
                 src = candidate / name
                 if src.is_file():
                     shutil.copy2(src, round_dir / name)
 
             if verdict == "PASS":
+                flipped = mark_checklist_passed(
+                    candidate, reason=f"PASS harness round {meta['review_round']}"
+                )
+                append_progress(
+                    candidate,
+                    f"PASS round {meta['review_round']}; checklist flipped: "
+                    f"{', '.join(flipped) or '(none)'}",
+                )
                 return self._promote(meta)
 
             if verdict == "INCONCLUSIVE":
                 meta["status"] = "PAUSED"
                 meta["phase"] = "inconclusive"
                 meta["pause_reason"] = "Missing blocking evidence or environment (e.g. manim)."
+                append_progress(candidate, f"INCONCLUSIVE round {meta['review_round']}")
                 self._persist(meta)
                 return meta
 
-            # FIX
+            # FIX — same handoff contract as batch_harness
+            write_handoff_from_review(
+                candidate,
+                final_review=final,
+                verification=verification,
+            )
+            append_progress(
+                candidate,
+                f"FIX round {meta['review_round']}: {final.get('reason') or verdict}",
+            )
             meta["review_round"] += 1
             if meta["review_round"] > meta["max_reviews"]:
                 meta["status"] = "INCOMPLETE"
@@ -217,7 +265,9 @@ class Harness:
             meta["status"] = "FIXING"
             meta["phase"] = "fix"
             self._persist(meta)
-            scenes = pipe.run_fix(audit, plan, script)
+            with TraceSpan(candidate, "fix", round=meta["review_round"]) as fix_span:
+                scenes = pipe.run_fix(audit, plan, script)
+                fix_span.ok = True
             episode["scenes"] = scenes
             write_json(candidate / "EPISODE.json", episode)
 

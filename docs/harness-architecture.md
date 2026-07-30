@@ -42,6 +42,8 @@ FIX round (context reset)
 - Structured retry: `generation_retry.py` (retryable vs non-retryable; no wipe-on-network)
 - Checklist progression: `mark_checklist_passed` on adjudicated PASS
 - `.set_color` auto-rewrite → `.set_fill` in rule_gate (template contradiction removed)
+- Shared control plane bits on **Harness** path: TRACE + HANDOFF on FIX + checklist on PASS + skip render when pre-gate fails
+- Eval variants: `scripts/run_eval_variants.py` (pre_fix vs post_fix discrimination)
 
 ## Operator commands
 
@@ -51,6 +53,9 @@ python -c "from manim_edu_harness.agents import assemble_constraints; print(len(
 
 # Deterministic evals
 python scripts/run_evals.py
+
+# OpenMAIC-style pre/post-fix gate variants
+python scripts/run_eval_variants.py
 
 # Batch (writes TRACE.jsonl per candidate)
 python batch_harness.py --input topics/batch_probe.json --limit 1
