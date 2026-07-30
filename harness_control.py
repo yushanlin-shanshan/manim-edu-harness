@@ -53,6 +53,8 @@ def main() -> int:
     )
 
     p_agents = sub.add_parser("agents", help="show pipeline agent roles")
+    p_skills = sub.add_parser("skills", help="list ClawHub-style registered skills")
+    p_skills.add_argument("--all", action="store_true", help="include disabled")
 
     args = parser.parse_args()
     h = Harness(ROOT)
@@ -86,6 +88,7 @@ def main() -> int:
                 {
                     "pipeline": ["planner", "writer", "coder", "reviewer"],
                     "control_plane": "EpisodeLoop (shared with batch_harness)",
+                    "skill_registry": "prompts/skills/registry.json",
                     "llm": "glm|zhipu via make_llm_client (ZHIPU_API_KEY)",
                     "topology": "worker → TTS → rule_gate → render → reviewer",
                     "verification": ["rule_gate", "verify_manim AST (+ optional manim render)"],
@@ -98,6 +101,21 @@ def main() -> int:
                 indent=2,
             )
         )
+        return 0
+    if args.cmd == "skills":
+        from manim_edu_harness.skill_registry import get_registry
+
+        reg = get_registry(reload=True)
+        if args.json:
+            print(json.dumps(reg.catalog(), ensure_ascii=False, indent=2))
+            return 0
+        for skill in reg.list_skills(include_disabled=args.all):
+            flag = "on " if skill.enabled else "off"
+            kind = "pkg" if skill.packaged else "flat"
+            print(f"[{flag}] [{kind}] {skill.id:24} {skill.description}")
+        print("--- roles ---")
+        for role, ids in (reg._doc.get("roles") or {}).items():  # noqa: SLF001
+            print(f"{role}: {', '.join(ids)}")
         return 0
     return 2
 

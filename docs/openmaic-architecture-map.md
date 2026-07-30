@@ -25,7 +25,7 @@ We do **not** copy stage UI, whiteboard, OpenClaw skill, or PBL. We copy **contr
 | Director graph (single control plane) | One topology bounds the loop | **Done:** `control_plane.EpisodeLoop` shared by `batch_harness` + `Harness` |
 | Agent allowlist / tool schemas | Deterministic capability bounds | Already: `rule_gate.py` iron laws |
 | Conversation summarizers | Compact context before next turn | Already: `HANDOFF.json` (strengthen checklist progression) |
-| Skills (`skills/openmaic/SKILL.md`) | ClawHub-style packaged skills | Phase-2 skill registry (planned) |
+| Skills (`skills/openmaic/SKILL.md`) | ClawHub-style packaged skills | **Done:** `skill_registry.py` + `prompts/skills/registry.json` (flat + packaged) |
 | JSON repair | LLM JSON rarely perfect | Optional later (`json_repair`); not blocking |
 | Per-stage model routing | Different models for outline vs content | Config hook later (`harness.config.json` roles) |
 
@@ -38,6 +38,7 @@ We do **not** copy stage UI, whiteboard, OpenClaw skill, or PBL. We copy **contr
 5. **Harness ↔ batch shared contracts** — TRACE, HANDOFF on FIX, checklist on PASS, skip render when pre-gate fails.
 6. **Eval variants** — `python scripts/run_eval_variants.py` pre_fix vs post_fix discrimination.
 7. **Unified EpisodeLoop** — `src/manim_edu_harness/control_plane.py`; batch + interactive are thin adapters.
+8. **Skill registry** — ClawHub-style discover/load/bind via `prompts/skills/registry.json`.
 
 ## Explicit non-goals
 

@@ -29,8 +29,16 @@ Adapters:
 
 ## Phase 2 (remaining)
 
-- Skill registry / marketplace (ClawHub-style)
 - Trace-driven automatic prompt patches (Hermes-style learning loop)
+
+## Skill registry (ClawHub-style)
+
+- Catalog: [`prompts/skills/registry.json`](../prompts/skills/registry.json)
+- Loader: [`skill_registry.py`](../src/manim_edu_harness/skill_registry.py)
+- Formats: flat `prompts/skills/<id>.md` **or** packaged `prompts/skills/<id>/SKILL.md`
+- Role assembly: `assemble_constraints(role)` reads registry bindings
+- CLI: `python harness_control.py skills` / `python harness_control.py --json skills`
+- Template: `prompts/skills/_template/SKILL.md` (underscore = not discovered)
 
 ## OpenMAIC pattern imports (see [`openmaic-architecture-map.md`](openmaic-architecture-map.md))
 

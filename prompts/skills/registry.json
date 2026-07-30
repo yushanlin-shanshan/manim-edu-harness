@@ -1,0 +1,53 @@
+{
+  "version": 1,
+  "description": "ClawHub-style skill registry for manim-edu-harness progressive disclosure",
+  "roles": {
+    "planner": ["math_rigor"],
+    "writer": ["math_rigor", "narration_tts"],
+    "coder": [
+      "math_rigor",
+      "animation_atomic",
+      "visual_safety",
+      "narration_tts",
+      "layout_aesthetics",
+      "geometry_primitives",
+      "advanced_animations",
+      "latex_symbols"
+    ],
+    "reviewer": ["math_rigor", "visual_safety"]
+  },
+  "skills": {
+    "math_rigor": {
+      "description": "Math correctness, domain/conditions, no jumps in derivation",
+      "enabled": true
+    },
+    "narration_tts": {
+      "description": "Narration.md + TTS mount helpers for short-drama audio",
+      "enabled": true
+    },
+    "animation_atomic": {
+      "description": "Atomic play() budgets and stage transitions",
+      "enabled": true
+    },
+    "visual_safety": {
+      "description": "Safe frame, safe_move, clear_board, COLOR_SYSTEM",
+      "enabled": true
+    },
+    "layout_aesthetics": {
+      "description": "Layout hierarchy, three visual states, focus",
+      "enabled": true
+    },
+    "geometry_primitives": {
+      "description": "Manim CE geometry API; forbid .set_color after construction",
+      "enabled": true
+    },
+    "advanced_animations": {
+      "description": "TransformMatchingTex and advanced Manim transitions",
+      "enabled": true
+    },
+    "latex_symbols": {
+      "description": "Common LaTeX / MathTex symbols (∇, ∂, ∫, …)",
+      "enabled": true
+    }
+  }
+}
