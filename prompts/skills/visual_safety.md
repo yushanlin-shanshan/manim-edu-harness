@@ -26,3 +26,20 @@ def clear_board(self):
 ```
 
 禁止在 `clear_board` 里调用 `self.renderer.update_frame(...)`（缺参会直接炸渲染）。
+
+<!-- learned:rule-gate-pre-render-skip -->
+<!-- count=4 updated=2026-07-30T07:52Z -->
+## Learned from traces: pre-render gate
+
+- Treat rule_gate iron laws as hard prerequisites before Manim render.
+- After FIX, re-read HANDOFF.json failed_checks and resolve them first.
+<!-- /learned:rule-gate-pre-render-skip -->
+
+<!-- learned:color-system-nameerror -->
+<!-- count=2 updated=2026-07-30T07:52Z -->
+## Learned from traces: COLOR_SYSTEM
+
+- Always define module-level `COLOR_SYSTEM = {...}` **before** `class EpisodeScene`.
+- Prefer `color=COLOR_SYSTEM["primary"]` only after that constant exists.
+- Rule gate auto-injects COLOR_SYSTEM when missing; do not rely on injection alone—emit it in the first coder draft.
+<!-- /learned:color-system-nameerror -->

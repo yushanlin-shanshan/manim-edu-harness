@@ -50,3 +50,11 @@ Text("∇f(x) = ...")  # BAD for formulas / TransformMatchingTex
 - 更新公式与学习率 η 用 MathTex；曲线用 `Axes` + `ParametricFunction`。
 - 箭头用 `Arrow`；**不要**对 Axes 子对象做脆弱的 `__getattr__` 链式取值。
 - 必须实现 `conclusion_phase()`（学习率过大/过小对比）。
+
+<!-- learned:axes-i2gp-not-get-point -->
+<!-- count=3 updated=2026-07-30T07:52Z -->
+## Learned from traces: graph point lookup
+
+- Forbidden: `graph.get_point(...)`.
+- Use `axes.i2gp(x, graph)` or `axes.c2p(x, y)`.
+<!-- /learned:axes-i2gp-not-get-point -->
