@@ -31,6 +31,9 @@ We do **not** copy stage UI, whiteboard, OpenClaw skill, or PBL. We copy **contr
 | Per-stage model routing | Different models for outline vs content | **Done:** `roles` in `harness.config.json` + `role_routing.resolve_role_params` |
 | `eval/whiteboard-layout` VLM scorer | Visual teaching-quality rubric on screenshots | **Done:** `layout_scorer.py` + optional `review_policy.vlm_layout` |
 | `code-line-budget` summarizer | Tiered context: full → ids → omitted count | **Done:** `context_budget.py` for HANDOFF + syntax-FIX |
+| `outline-generator` fallbacks | Partial outline → safe defaults | **Done:** `plan_fallback.apply_plan_fallbacks` |
+| `json-repair` reasoning strip | Drop `<think>` before JSON parse | **Done:** `strip_reasoning_prefix` in `json_repair` |
+| speech / json-output snippets | Shared TTS + JSON output rules | **Done:** `prompts/snippets/{speech-guidelines,json-output-rules}.md` |
 
 ## Immediate upgrades (this change set)
 
@@ -47,6 +50,8 @@ We do **not** copy stage UI, whiteboard, OpenClaw skill, or PBL. We copy **contr
 11. **Per-stage model routing** — `roles` config + `AgentPipeline` kwargs to `chat`/`chat_json`.
 12. **VLM layout score** — post-render frame sample + optional GLM-4V rubric (`LAYOUT_SCORE.json`).
 13. **FIX context budget** — compact failed_checks + tiered scene dump on syntax FIX.
+14. **Plan fallbacks** — fill missing PLAN fields before writer/coder.
+15. **Reasoning-prefix JSON repair** + speech/json prompt snippets.
 
 ## Explicit non-goals
 

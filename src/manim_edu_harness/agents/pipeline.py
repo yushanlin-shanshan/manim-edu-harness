@@ -18,6 +18,7 @@ from ..handoff import (
 from ..zhipu_client import ZhipuClient
 from . import load_prompt, role_system_prompt
 from ..context_budget import create_scene_budget, fix_context_settings, render_scenes_for_fix
+from ..plan_fallback import apply_plan_fallbacks
 from ..role_routing import resolve_role_params
 
 
@@ -133,6 +134,7 @@ class AgentPipeline:
             ],
             **self._role_kwargs("planner"),
         )
+        plan = apply_plan_fallbacks(plan, self.request)
         write_json(self.candidate / "PLAN.json", plan)
         md = [
             f"# Plan — {plan.get('title', self.request.get('topic', 'episode'))}",

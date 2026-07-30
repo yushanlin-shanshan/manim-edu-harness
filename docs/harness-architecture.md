@@ -68,6 +68,12 @@ Pattern catalog: [`trace_learn.py`](../src/manim_edu_harness/trace_learn.py) (`P
 }
 ```
 
+### Plan fallbacks + prompt snippets
+
+- Partial `PLAN.json` → `plan_fallback.apply_plan_fallbacks` (title/beats/objectives defaults).
+- Snippets: `prompts/snippets/json-output-rules.md`, `speech-guidelines.md` (wired into planner/writer/reviewer).
+- `json_repair.strip_reasoning_prefix` strips `<think>…</think>` before parse.
+
 ### VLM layout score + FIX context budget
 
 - Optional post-render scorer: `layout_scorer.maybe_score_candidate_layout` (ffmpeg frames → GLM-4V). Enable via `review_policy.vlm_layout.enabled`.

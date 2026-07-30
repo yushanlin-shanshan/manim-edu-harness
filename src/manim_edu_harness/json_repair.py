@@ -19,8 +19,31 @@ def strip_markdown_fences(text: str) -> str:
     return "\n".join(lines).strip()
 
 
+def strip_reasoning_prefix(text: str) -> str:
+    """Drop leading chain-of-thought blocks (OpenMAIC stripReasoningPrefix)."""
+    trimmed = text.strip()
+    matches = list(re.finditer(r"</(?:think|thinking|reasoning)>\s*", trimmed, flags=re.I))
+    if not matches:
+        # Also strip unclosed <think>... prefix when JSON follows
+        m = re.search(r"<(?:think|thinking|reasoning)\b[^>]*>[\s\S]*?(?=\{|\[)", trimmed, flags=re.I)
+        if m:
+            return trimmed[m.end() :].lstrip()
+        return trimmed
+    last = matches[-1]
+    return trimmed[last.end() :].lstrip()
+
+
 def _remove_trailing_commas(text: str) -> str:
     return re.sub(r",(\s*[}\]])", r"\1", text)
+
+
+def _repair_quoted_property_fragments(text: str) -> str:
+    # "key: true" → "key": true  (OpenMAIC repairQuotedPropertyFragments)
+    return re.sub(
+        r'([,{]\s*)"([A-Za-z_][A-Za-z0-9_]*)\s*:\s*(true|false|null|[+-]?\d+(?:\.\d+)?)"(?=\s*[,}])',
+        r'\1"\2": \3',
+        text,
+    )
 
 
 def _extract_json_span(text: str) -> str | None:
@@ -66,23 +89,29 @@ def loads_llm_json(text: str) -> Any:
     if not raw:
         raise ValueError("empty LLM JSON")
 
+    cleaned = strip_reasoning_prefix(raw)
     candidates: list[str] = []
-    stripped = strip_markdown_fences(raw)
+    stripped = strip_markdown_fences(cleaned)
     candidates.append(stripped)
-    if stripped != raw:
-        candidates.append(raw)
+    if stripped != cleaned:
+        candidates.append(cleaned)
+    if cleaned != raw:
+        candidates.append(strip_markdown_fences(raw))
 
-    span = _extract_json_span(stripped)
-    if span and span not in candidates:
-        candidates.append(span)
-    span_raw = _extract_json_span(raw)
-    if span_raw and span_raw not in candidates:
-        candidates.append(span_raw)
+    for base in list(candidates):
+        span = _extract_json_span(base)
+        if span and span not in candidates:
+            candidates.append(span)
 
     last_err: Exception | None = None
     tried: list[str] = []
     for cand in candidates:
-        for variant in (cand, _remove_trailing_commas(cand)):
+        for variant in (
+            cand,
+            _remove_trailing_commas(cand),
+            _repair_quoted_property_fragments(cand),
+            _remove_trailing_commas(_repair_quoted_property_fragments(cand)),
+        ):
             if variant in tried:
                 continue
             tried.append(variant)

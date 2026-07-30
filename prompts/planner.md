@@ -42,3 +42,5 @@ JSON schema（字段可增不可缺核心）：
 - `derivation_steps` 不得跳过超过 1 行代数。
 - `visual` 必须可被原子化 `play` 实现（同屏动画 ≤2）；注明活跃/背景/离场。
 - 语言与 REQUEST.language 一致（默认中文）。
+
+{{snippet:json-output-rules}}

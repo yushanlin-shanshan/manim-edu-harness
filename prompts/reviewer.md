@@ -29,3 +29,5 @@
 6. 越界布局 / 缺边界安全（与 visual_safety 一致）。
 
 仅 minors → PASS。先读源码再下结论。
+
+{{snippet:json-output-rules}}

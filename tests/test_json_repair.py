@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import unittest
 
-from manim_edu_harness.json_repair import loads_llm_json
+from manim_edu_harness.json_repair import loads_llm_json, strip_reasoning_prefix
 from manim_edu_harness.zhipu_client import ZhipuClient, ZhipuError
 
 
@@ -24,6 +24,16 @@ class JsonRepairTests(unittest.TestCase):
     def test_hard_fail_garbage(self) -> None:
         with self.assertRaises(ValueError):
             loads_llm_json("not json at all {{{")
+
+    def test_strip_reasoning_prefix(self) -> None:
+        text = "<think>secret</think>\n{\"a\": 1}"
+        self.assertEqual(strip_reasoning_prefix(text).strip(), '{"a": 1}')
+        self.assertEqual(loads_llm_json(text), {"a": 1})
+
+    def test_quoted_property_fragments(self) -> None:
+        # "count: 2" wrongly quoted as a single token → "count": 2
+        text = '{"a":1,"count: 2"}'
+        self.assertEqual(loads_llm_json(text), {"a": 1, "count": 2})
 
 
 class ChatJsonRepairIntegration(unittest.TestCase):

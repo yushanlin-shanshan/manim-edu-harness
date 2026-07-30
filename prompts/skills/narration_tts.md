@@ -20,3 +20,5 @@ self.pad_to_narration_length()
 3. `add_sound(..., time_offset=-self.time)` 钉到 t=0
 
 禁止删除或改名该函数。Harness 用豆包 TTS（seed-tts-2.0）从 narration.md 合成 wav。
+
+{{snippet:speech-guidelines}}
