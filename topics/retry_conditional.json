@@ -1,0 +1,23 @@
+{
+  "knowledge_points": [
+    {
+      "id": "kp-conditional-prob",
+      "title": "条件概率：P(A|B)",
+      "topic": "条件概率定义与乘法公式",
+      "major": "数学 / 概率论",
+      "audience": "高中 / 大一",
+      "language": "zh-CN",
+      "key_points": [
+        "定义：P(A|B)=P(A∩B)/P(B)，P(B)>0",
+        "乘法公式：P(A∩B)=P(A|B)P(B)",
+        "与独立事件对比：独立则 P(A|B)=P(A)",
+        "样本空间缩减到 B"
+      ],
+      "must_teach": [
+        "MathTex 形式化；可用韦恩示意；# [KP-k]",
+        "COLOR_SYSTEM；clear_board；safe_move；load_and_play_narration",
+        "原子化 play≤2"
+      ]
+    }
+  ]
+}

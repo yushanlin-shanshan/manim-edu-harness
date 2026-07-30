@@ -136,6 +136,10 @@ def check_scene_rules(source: str, *, require_color_system: bool = True) -> list
         failures.append("missing load_and_play_narration definition")
     if not re.search(r"self\.load_and_play_narration\s*\(", source):
         failures.append("missing load_and_play_narration() call")
+    if re.search(r"from\s+manim\.mobject(?:\.\w+)+\s+import", source):
+        failures.append("forbid deep manim.mobject.* imports; use from manim import *")
+    if re.search(r"\bCOLOR_SIZE\b|\bCOLOR_STYLE\b", source):
+        failures.append("typo COLOR_SIZE/COLOR_STYLE — use COLOR_SYSTEM")
     if "def clear_board" not in source:
         failures.append("missing clear_board definition")
     if "def safe_move" not in source and "SAFE_Y" not in source:
@@ -268,6 +272,21 @@ def _rewrite_set_color(source: str) -> tuple[str, bool]:
     return out, out != source
 
 
+
+def _strip_deep_manim_imports(source: str) -> tuple[str, bool]:
+    """Remove deep manim.mobject.* imports; rely on `from manim import *`."""
+    new, n = re.subn(
+        r"(?m)^\s*from\s+manim\.mobject(?:\.\w+)+\s+import\s+.+\n?",
+        "",
+        source,
+    )
+    return new, n > 0
+
+
+def _fix_color_system_typos(source: str) -> tuple[str, bool]:
+    new, n = re.subn(r"\bCOLOR_SIZE\b|\bCOLOR_STYLE\b", "COLOR_SYSTEM", source)
+    return new, n > 0
+
 def auto_fix_scene_source(source: str, *, require_color_system: bool = True) -> tuple[str, list[str]]:
     """Inject missing iron-law helpers. Returns (new_source, fix_labels)."""
     fixes: list[str] = []
@@ -283,6 +302,14 @@ def auto_fix_scene_source(source: str, *, require_color_system: bool = True) -> 
         fixes.append("KP anchors")
         print("[Rule Gate] Auto-fixing missing # [KP-k] anchors...")
 
+    out, deep_fixed = _strip_deep_manim_imports(out)
+    if deep_fixed:
+        fixes.append("strip deep manim.mobject imports")
+        print("[Rule Gate] Auto-fixing deep manim.mobject imports...")
+    out, typo_fixed = _fix_color_system_typos(out)
+    if typo_fixed:
+        fixes.append("COLOR_SYSTEM typo")
+        print("[Rule Gate] Auto-fixing COLOR_SIZE/COLOR_STYLE → COLOR_SYSTEM...")
     out, cb_fixed = _rewrite_clear_board_if_unsafe(out)
     if cb_fixed:
         fixes.append("clear_board")

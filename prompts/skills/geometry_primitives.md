@@ -84,3 +84,12 @@ def make_right_triangle(a: float = 3.0, b: float = 2.0) -> VGroup:
 - For dimming: `obj.animate.set_fill(GREY).set_opacity(0.35)` — not `animate.set_color`.
 <!-- /learned:forbid-set-color -->
 
+<!-- learned:manim-star-import-only -->
+<!-- count=1 updated=2026-07-30T10:44Z -->
+## Learned from traces: import only `from manim import *`
+
+- Forbidden: `from manim.mobject.geometry import Line` (and other deep imports).
+- `Line` / `Dot` / `Arrow` come from `from manim import *` already.
+- Deep imports break across Manim versions (`Line` vs `Line3D`).
+<!-- /learned:manim-star-import-only -->
+

@@ -53,3 +53,12 @@ def clear_board(self):
 - Forbidden: arbitrary hex strings / RGB tuples that are not Manim-accepted types when passed where ManimColor is required.
 - Prefer `color=COLOR_SYSTEM["primary"]` / constructor kwargs; never invent `ManimColor([...])` with floats.
 <!-- /learned:manimcolor-types -->
+
+<!-- learned:color-system-typo -->
+<!-- count=1 updated=2026-07-30T10:44Z -->
+## Learned from traces: COLOR_SYSTEM spelling
+
+- The constant is **`COLOR_SYSTEM`**, never `COLOR_SIZE` / `COLOR_STYLE`.
+- Always `color=COLOR_SYSTEM["primary"]` (or secondary/accent/…).
+<!-- /learned:color-system-typo -->
+
