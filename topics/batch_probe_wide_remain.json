@@ -1,44 +1,6 @@
 {
   "knowledge_points": [
     {
-      "id": "kp-chain-rule",
-      "title": "复合函数求导：链式法则",
-      "topic": "复合函数求导：链式法则 (f∘g)' = f'(g)·g'",
-      "major": "数学 / 微积分",
-      "audience": "高中 / 大一",
-      "language": "zh-CN",
-      "key_points": [
-        "设定：y=f(u), u=g(x)，f,g 可微",
-        "结论：dy/dx = (dy/du)·(du/dx)",
-        "外函数导数 × 内函数导数",
-        "例：y=sin(x^2) → cos(x^2)·2x"
-      ],
-      "must_teach": [
-        "MathTex 形式化 + 条件；# [KP-k]",
-        "COLOR_SYSTEM；clear_board；safe_move；load_and_play_narration",
-        "TransformMatchingTex；原子化 play≤2"
-      ]
-    },
-    {
-      "id": "kp-definite-integral-area",
-      "title": "定积分的几何意义：曲边梯形面积",
-      "topic": "定积分：黎曼和逼近曲边梯形面积",
-      "major": "数学 / 微积分",
-      "audience": "高中 / 大一",
-      "language": "zh-CN",
-      "key_points": [
-        "定义：∫_a^b f(x)dx = lim_{n→∞} Σ f(x_i*)Δx（黎曼和）",
-        "条件：f 在 [a,b] 上可积（连续即可）",
-        "几何：上方为正面积，下方为负面积",
-        "微积分基本定理连接：F(b)-F(a)"
-      ],
-      "must_teach": [
-        "MathTex 形式化 + 区间条件；# [KP-k]",
-        "COLOR_SYSTEM；clear_board；safe_move；load_and_play_narration",
-        "可用矩形条示意黎曼和；原子化 play≤2"
-      ]
-    },
-    {
       "id": "kp-matrix-multiply",
       "title": "矩阵乘法：行乘列",
       "topic": "矩阵乘法：A(m×n)·B(n×p)=C(m×p)，c_ij=行·列",

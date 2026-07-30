@@ -60,3 +60,11 @@ Text("∇f(x) = ...")  # BAD for formulas / TransformMatchingTex
 - Interval markers: `Dot(axes.c2p(a, 0))` / `Line(axes.c2p(a,0), axes.c2p(b,0))`.
 <!-- /learned:axes-i2gp-not-get-point -->
 
+<!-- learned:latex-raw-strings -->
+<!-- count=1 updated=2026-07-30T10:20Z -->
+## Learned from traces: raw LaTeX strings
+
+- Always write MathTex / Matrix entries as raw strings: `r"\\cdots"`, `r"\\vdots"`.
+- Non-raw `"\\cdots"` / `"\cdots"` triggers `SyntaxWarning: invalid escape sequence` and can corrupt matrices.
+<!-- /learned:latex-raw-strings -->
+
