@@ -118,3 +118,36 @@ def open_checklist_items(candidate: Path) -> list[dict[str, Any]]:
         return []
     data = json.loads(path.read_text(encoding="utf-8"))
     return [it for it in (data.get("items") or []) if not it.get("passes")]
+
+
+def mark_checklist_passed(
+    candidate: Path,
+    *,
+    reason: str = "adjudicated PASS",
+    item_ids: list[str] | None = None,
+) -> list[str]:
+    """Flip checklist item passes=true after verified PASS (Anthropic handoff).
+
+    Never deletes items. Returns ids that were flipped.
+    """
+    path = Path(candidate) / "KP_CHECKLIST.json"
+    if not path.is_file():
+        return []
+    data = json.loads(path.read_text(encoding="utf-8"))
+    items = list(data.get("items") or [])
+    flipped: list[str] = []
+    wanted = set(item_ids) if item_ids else None
+    stamp = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+    for item in items:
+        iid = str(item.get("id") or "")
+        if wanted is not None and iid not in wanted:
+            continue
+        if item.get("passes"):
+            continue
+        item["passes"] = True
+        item["evidence"] = reason
+        item["passed_at"] = stamp
+        flipped.append(iid)
+    data["items"] = items
+    write_json(path, data)
+    return flipped

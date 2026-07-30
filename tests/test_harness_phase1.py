@@ -143,6 +143,14 @@ class EpisodeScene(Scene):
         fails = check_scene_rules(bad)
         self.assertTrue(any("set_color" in f for f in fails))
 
+    def test_auto_fix_rewrites_set_color(self) -> None:
+        bad = MINIMAL_OK + "\n    def foo(self):\n        Square().set_color(RED)\n"
+        fixed, labels = auto_fix_scene_source(bad, require_color_system=True)
+        self.assertIn("set_color→set_fill", labels)
+        self.assertNotIn(".set_color(", fixed)
+        self.assertIn(".set_fill(", fixed)
+        self.assertEqual(check_scene_rules(fixed, require_color_system=True), [])
+
     def test_run_rule_gate_auto_fix_writes(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)

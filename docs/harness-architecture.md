@@ -30,11 +30,18 @@ FIX round (context reset)
   → HANDOFF + open checklist only (short prompt)
 ```
 
-## Phase 2 (not in this PR)
+## Phase 2 (in progress)
 
 - Unify `batch_harness.py` and `Harness` into one control plane
 - Skill registry / marketplace (ClawHub-style)
 - Trace-driven automatic prompt patches (Hermes-style learning loop)
+
+## OpenMAIC pattern imports (see [`openmaic-architecture-map.md`](openmaic-architecture-map.md))
+
+- Prompt snippets: `prompt_loader.py` + `prompts/snippets/` (`{{snippet:}}`, `{{#if}}`)
+- Structured retry: `generation_retry.py` (retryable vs non-retryable; no wipe-on-network)
+- Checklist progression: `mark_checklist_passed` on adjudicated PASS
+- `.set_color` auto-rewrite → `.set_fill` in rule_gate (template contradiction removed)
 
 ## Operator commands
 

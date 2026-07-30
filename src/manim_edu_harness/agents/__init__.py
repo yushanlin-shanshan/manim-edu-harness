@@ -1,10 +1,13 @@
-"""Prompt loading for agent roles (progressive disclosure)."""
+"""Prompt loading for agent roles (progressive disclosure).
+
+Skills may include OpenMAIC-style ``{{snippet:name}}`` includes — expanded via
+``prompt_loader.expand_markdown``.
+"""
 
 from __future__ import annotations
 
-from pathlib import Path
-
 from ..fsutil import project_root
+from ..prompt_loader import expand_markdown
 
 # Role → skill files under prompts/skills/ (after core.md)
 _ROLE_SKILLS: dict[str, tuple[str, ...]] = {
@@ -26,13 +29,13 @@ _ROLE_SKILLS: dict[str, tuple[str, ...]] = {
 
 def load_prompt(name: str) -> str:
     path = project_root() / "prompts" / f"{name}.md"
-    return path.read_text(encoding="utf-8")
+    return expand_markdown(path.read_text(encoding="utf-8"))
 
 
 def _load_core() -> str:
     path = project_root() / "prompts" / "core.md"
     if path.is_file():
-        return path.read_text(encoding="utf-8")
+        return expand_markdown(path.read_text(encoding="utf-8"))
     # Backward compat: fall back to full worker.md
     return load_worker_constraints()
 
@@ -40,7 +43,7 @@ def _load_core() -> str:
 def _load_skill(name: str) -> str:
     path = project_root() / "prompts" / "skills" / f"{name}.md"
     if path.is_file():
-        return path.read_text(encoding="utf-8")
+        return expand_markdown(path.read_text(encoding="utf-8"))
     return ""
 
 
@@ -48,7 +51,7 @@ def load_worker_constraints() -> str:
     """Merged view of all constraints (docs / backward compat)."""
     path = project_root() / "prompts" / "worker.md"
     if path.is_file():
-        return path.read_text(encoding="utf-8")
+        return expand_markdown(path.read_text(encoding="utf-8"))
     return ""
 
 

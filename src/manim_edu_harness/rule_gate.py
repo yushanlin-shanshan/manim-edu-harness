@@ -260,6 +260,14 @@ def _rewrite_clear_board_if_unsafe(source: str) -> tuple[str, bool]:
     return _append_class_methods(cleaned, [CLEAR_BOARD_METHOD]), True
 
 
+def _rewrite_set_color(source: str) -> tuple[str, bool]:
+    """Rewrite forbidden .set_color( → .set_fill( (Mitchell: gate must fix)."""
+    if not re.search(r"\.set_color\s*\(", source):
+        return source, False
+    out = re.sub(r"\.set_color\s*\(", ".set_fill(", source)
+    return out, out != source
+
+
 def auto_fix_scene_source(source: str, *, require_color_system: bool = True) -> tuple[str, list[str]]:
     """Inject missing iron-law helpers. Returns (new_source, fix_labels)."""
     fixes: list[str] = []
@@ -323,11 +331,14 @@ def auto_fix_scene_source(source: str, *, require_color_system: bool = True) -> 
             fixes.append("load_and_play_narration() call")
             print("[Rule Gate] Auto-fixing missing load_and_play_narration() call...")
 
+    out, color_fixed = _rewrite_set_color(out)
+    if color_fixed:
+        fixes.append("set_color→set_fill")
+        print("[Rule Gate] Auto-fixing .set_color(...) → .set_fill(...)")
+
     # Soft rewrite: get_point → comment warning only (cannot safely rewrite call sites)
     if re.search(r"\.get_point\s*\(", out):
         print("[Rule Gate] Detected graph.get_point(...); FIX handoff should use axes.i2gp/c2p")
-    if re.search(r"\.set_color\s*\(", out):
-        print("[Rule Gate] Detected .set_color(...); FIX handoff should use constructor color=/set_fill")
 
     return out, fixes
 

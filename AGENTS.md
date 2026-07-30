@@ -8,7 +8,10 @@ Harness Engineering (Mitchell): when an agent makes a mistake, **engineer the ha
 
 - Shared: `prompts/core.md`
 - Skills: `prompts/skills/` assembled per role via `agents.assemble_constraints`
-- Deterministic gate: `rule_gate.py` (auto-injects missing `COLOR_SYSTEM` / `safe_move` / `clear_board` / narration helpers / `conclusion_phase` / KP anchors when `review_policy.rule_gate_auto_fix` is true)
+- Deterministic gate: `rule_gate.py` (auto-injects missing `COLOR_SYSTEM` / `safe_move` / `clear_board` / narration helpers / `conclusion_phase` / KP anchors; rewrites `.set_color` → `.set_fill` when `review_policy.rule_gate_auto_fix` is true)
+- Prompt snippets (OpenMAIC-style): `prompts/snippets/` via `prompt_loader.expand_markdown` / `{{snippet:name}}`
+- Structured API retry: `generation_retry.is_retryable_generation_error` — network/429 resume from HANDOFF, never “wipe fully”
+- On PASS: `mark_checklist_passed` flips `KP_CHECKLIST.json` items (`passes=true` + evidence)
 - **Pre-render order:** `check → auto_fix → render → review` (`rule_gate_pre_render=true`) so missing COLOR_SYSTEM does not burn a FIX round
 - `review_policy.require_color_system` defaults **true** in batch + evals (same bar)
 - Coder skills include `geometry_primitives`, `advanced_animations` (TransformMatchingTex), `latex_symbols` (∇/∫)

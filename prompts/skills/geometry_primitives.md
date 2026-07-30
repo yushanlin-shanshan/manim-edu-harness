@@ -10,10 +10,9 @@ Triangle(vertices=[...])
 Polygon(vertices=[...])  # Polygon 用 *points，不是 vertices=
 RightAngle(p1, p2, p3)   # 不是三点；需要两条 Line
 
-# BAD — 不要事后 .set_color()（易触发 API/透明度错误）
-square = Square()
-square.set_color(RED)  # 禁止！
 ```
+
+{{snippet:forbid-set-color}}
 
 ## 颜色：构造时指定（MUST）
 

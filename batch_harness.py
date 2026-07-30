@@ -23,8 +23,9 @@ if str(SRC) not in sys.path:
     sys.path.insert(0, str(SRC))
 
 from manim_edu_harness.fsutil import load_dotenv, load_config, write_json  # noqa: E402
+from manim_edu_harness.generation_retry import is_retryable_generation_error  # noqa: E402
 from manim_edu_harness.glm_client import GLMClient, MockGLMClient  # noqa: E402
-from manim_edu_harness.handoff import append_progress, write_handoff_from_review  # noqa: E402
+from manim_edu_harness.handoff import append_progress, mark_checklist_passed, write_handoff_from_review  # noqa: E402
 from manim_edu_harness.renderer import renderer_render  # noqa: E402
 from manim_edu_harness.reviewer import reviewer_review  # noqa: E402
 from manim_edu_harness.rule_gate import pre_render_rule_gate  # noqa: E402
@@ -120,6 +121,18 @@ def run_single(
             print(f"WARNING: GLM network on attempt {attempt}: {exc}")
             sys.stdout.flush()
             append_trace(candidate, "worker_generate", ok=False, attempt=attempt, error=str(exc))
+            if not is_retryable_generation_error(exc):
+                return {
+                    "title": sanitize_text(title),
+                    "slug": slug,
+                    "status": "ERROR",
+                    "verdict": "ERROR",
+                    "attempts": attempts,
+                    "run_dir": str(run_dir),
+                    "delivered": None,
+                    "reason": sanitize_text(f"non-retryable ZhipuError: {exc}"),
+                    "dry_run": dry_run,
+                }
             if attempt >= max_reviews:
                 return {
                     "title": sanitize_text(title),
@@ -132,7 +145,12 @@ def run_single(
                     "reason": sanitize_text(f"ZhipuError: {exc}"),
                     "dry_run": dry_run,
                 }
-            fix_feedback = f"Previous attempt failed due to API network error: {exc}. Regenerate fully."
+            # OpenMAIC-style: resume from HANDOFF / open checklist — do not wipe candidate.
+            fix_feedback = (
+                f"Previous attempt hit a retryable API error: {exc}. "
+                "Continue from existing candidate + HANDOFF.json / FIX_FEEDBACK; "
+                "do not delete KP_CHECKLIST items or iron-law helpers."
+            )
             time.sleep(2.0 * attempt)
             continue
         with TraceSpan(candidate, "tts", attempt=attempt) as tts_span:
@@ -191,7 +209,11 @@ def run_single(
         append_trace(candidate, "attempt_verdict", attempt=attempt, verdict=verdict)
 
         if verdict == "PASS":
-            append_progress(candidate, f"PASS on attempt {attempt}")
+            flipped = mark_checklist_passed(candidate, reason=f"PASS attempt {attempt}")
+            append_progress(
+                candidate,
+                f"PASS on attempt {attempt}; checklist flipped: {', '.join(flipped) or '(none)'}",
+            )
             break
         if verdict == "INCONCLUSIVE":
             # Does not consume further repair rounds — stop this kp.
