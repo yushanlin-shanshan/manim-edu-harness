@@ -56,5 +56,9 @@
   "batch": {
     "concurrency": 1,
     "topics_file": "topics/knowledge_points.json"
+  },
+  "learning": {
+    "min_count": 2,
+    "auto_apply": false
   }
 }

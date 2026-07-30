@@ -12,8 +12,9 @@ Harness Engineering (Mitchell): when an agent makes a mistake, **engineer the ha
 - Prompt snippets (OpenMAIC-style): `prompts/snippets/` via `prompt_loader.expand_markdown` / `{{snippet:name}}`
 - Structured API retry: `generation_retry.is_retryable_generation_error` — network/429 resume from HANDOFF, never “wipe fully”
 - On PASS: `mark_checklist_passed` flips `KP_CHECKLIST.json` items (`passes=true` + evidence)
-- **Single control plane:** `control_plane.EpisodeLoop` — both `batch_harness.py` and `Harness` call the same topology (`worker → TTS → rule_gate → render → reviewer`)
+- **Single control plane:** `control_plane.EpisodeLoop` — both `batch_harness.py` and `Harness` call the same topology (`worker → TTS → rule_gate → render → reviewer`); plan-facing alias `director.run_topic`
 - **Skill registry:** `prompts/skills/registry.json` + `skill_registry.py` (flat `.md` or packaged `SKILL.md`); `python harness_control.py skills`
+- **Trace learning:** mine `runs/*/candidate` signals → propose/apply skill patches; `python harness_control.py learn` (default propose-only; `--apply` upserts `<!-- learned:… -->` blocks)
 - **Pre-render order:** `check → auto_fix → render → review` (`rule_gate_pre_render=true`) so missing COLOR_SYSTEM does not burn a FIX round
 - `review_policy.require_color_system` defaults **true** in batch + evals (same bar)
 - Coder skills include `geometry_primitives`, `advanced_animations` (TransformMatchingTex), `latex_symbols` (∇/∫)

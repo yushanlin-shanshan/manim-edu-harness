@@ -14,7 +14,7 @@
 ## Control flow
 
 ```text
-EpisodeLoop (shared control plane)
+EpisodeLoop / director.run_topic (shared control plane)
   worker_generate
   → TTS (pipeline.tts_enabled)
   → RuleGate pre-render (check → auto_fix)
@@ -25,11 +25,31 @@ EpisodeLoop (shared control plane)
 Adapters:
   batch_harness.py / harness_control batch  → delivered/<slug>/ + FINAL_REPORT
   Harness.start / continue                 → ACTIVE.json + workspace/ + library/
+  director.py                              → thin alias over EpisodeLoop (no second loop)
 ```
 
-## Phase 2 (remaining)
+## Phase 2
 
-- Trace-driven automatic prompt patches (Hermes-style learning loop)
+### Trace-driven skill learning (Hermes-style)
+
+Mine recurring failures from `runs/*/candidate` (`TRACE.jsonl`, `HANDOFF.json`, `RULE_GATE.json`, …) and **propose** (default) or **apply** idempotent patches into skill markdown:
+
+```bash
+# Propose only → evals/learning/last_report.{json,md}
+python harness_control.py learn
+python scripts/run_trace_learn.py --min-count 2
+
+# Upsert <!-- learned:{id} --> blocks into prompts/skills/*.md
+python harness_control.py learn --apply
+```
+
+Config (`harness.config.json`):
+
+```json
+"learning": { "min_count": 2, "auto_apply": false }
+```
+
+Pattern catalog: [`trace_learn.py`](../src/manim_edu_harness/trace_learn.py) (`PATTERNS`). Mitchell rule still prefers hard gates in `rule_gate.py` when a failure is deterministic.
 
 ## Skill registry (ClawHub-style)
 
@@ -63,6 +83,9 @@ python scripts/run_eval_variants.py
 
 # Batch (writes TRACE.jsonl per candidate)
 python batch_harness.py --input topics/batch_probe.json --limit 1
+
+# Trace learning (propose skill patches from runs/)
+python harness_control.py learn
 ```
 
 ## Mitchell rule for contributors
