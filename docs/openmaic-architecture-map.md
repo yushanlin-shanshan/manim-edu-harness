@@ -27,8 +27,8 @@ We do **not** copy stage UI, whiteboard, OpenClaw skill, or PBL. We copy **contr
 | Conversation summarizers | Compact context before next turn | Already: `HANDOFF.json` (strengthen checklist progression) |
 | Skills (`skills/openmaic/SKILL.md`) | ClawHub-style packaged skills | **Done:** `skill_registry.py` + `prompts/skills/registry.json` (flat + packaged) |
 | Trace / eval feedback → prompts | Recurring failures become permanent skill/gate changes | **Done:** `trace_learn.py` + `harness_control.py learn` |
-| JSON repair | LLM JSON rarely perfect | Optional later (`json_repair`); not blocking |
-| Per-stage model routing | Different models for outline vs content | Config hook later (`harness.config.json` roles) |
+| JSON repair | LLM JSON rarely perfect | **Done:** `json_repair.loads_llm_json` wired in `ZhipuClient.chat_json` |
+| Per-stage model routing | Different models for outline vs content | **Done:** `roles` in `harness.config.json` + `role_routing.resolve_role_params` |
 
 ## Immediate upgrades (this change set)
 
@@ -41,6 +41,8 @@ We do **not** copy stage UI, whiteboard, OpenClaw skill, or PBL. We copy **contr
 7. **Unified EpisodeLoop** — `src/manim_edu_harness/control_plane.py`; batch + interactive are thin adapters. Alias: `director.run_topic` / `promote_delivered`.
 8. **Skill registry** — ClawHub-style discover/load/bind via `prompts/skills/registry.json`.
 9. **Trace-driven learning** — `trace_learn.py` + `harness_control.py learn` mines TRACE/HANDOFF/RULE_GATE → propose/apply skill patches.
+10. **JSON repair** — `json_repair.loads_llm_json` (fences / trailing commas / prose wrap).
+11. **Per-stage model routing** — `roles` config + `AgentPipeline` kwargs to `chat`/`chat_json`.
 
 ## Explicit non-goals
 

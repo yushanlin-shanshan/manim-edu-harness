@@ -15,6 +15,8 @@ Harness Engineering (Mitchell): when an agent makes a mistake, **engineer the ha
 - **Single control plane:** `control_plane.EpisodeLoop` — both `batch_harness.py` and `Harness` call the same topology (`worker → TTS → rule_gate → render → reviewer`); plan-facing alias `director.run_topic`
 - **Skill registry:** `prompts/skills/registry.json` + `skill_registry.py` (flat `.md` or packaged `SKILL.md`); `python harness_control.py skills`
 - **Trace learning:** mine `runs/*/candidate` signals → propose/apply skill patches; `python harness_control.py learn` (default propose-only; `--apply` upserts `<!-- learned:… -->` blocks)
+- **JSON repair:** `json_repair.loads_llm_json` in `chat_json` (fences / trailing commas / prose-wrapped objects)
+- **Role routing:** `harness.config.json` → `roles.<planner|writer|coder|reviewer>` overrides model/temperature/max_tokens
 - **Pre-render order:** `check → auto_fix → render → review` (`rule_gate_pre_render=true`) so missing COLOR_SYSTEM does not burn a FIX round
 - `review_policy.require_color_system` defaults **true** in batch + evals (same bar)
 - Coder skills include `geometry_primitives`, `advanced_animations` (TransformMatchingTex), `latex_symbols` (∇/∫)

@@ -8,6 +8,8 @@ import urllib.error
 import urllib.request
 from typing import Any
 
+from .json_repair import loads_llm_json
+
 
 class ZhipuError(RuntimeError):
     pass
@@ -43,13 +45,14 @@ class ZhipuClient:
         *,
         temperature: float | None = None,
         max_tokens: int | None = None,
+        model: str | None = None,
         response_format_json: bool = False,
     ) -> str:
         import time
 
         url = f"{self.base_url}/chat/completions"
         body: dict[str, Any] = {
-            "model": self.model,
+            "model": self.model if model is None else model,
             "messages": messages,
             "temperature": self.temperature if temperature is None else temperature,
             "max_tokens": self.max_tokens if max_tokens is None else max_tokens,
@@ -110,12 +113,12 @@ class ZhipuClient:
         **kwargs: Any,
     ) -> dict[str, Any]:
         text = self.chat(messages, response_format_json=True, **kwargs)
-        text = text.strip()
-        if text.startswith("```"):
-            lines = text.splitlines()
-            if lines and lines[0].startswith("```"):
-                lines = lines[1:]
-            if lines and lines[-1].strip() == "```":
-                lines = lines[:-1]
-            text = "\n".join(lines)
-        return json.loads(text)
+        try:
+            data = loads_llm_json(text)
+        except ValueError as exc:
+            raise ZhipuError(str(exc)) from None
+        if not isinstance(data, dict):
+            raise ZhipuError(
+                f"Expected JSON object from chat_json, got {type(data).__name__}"
+            )
+        return data

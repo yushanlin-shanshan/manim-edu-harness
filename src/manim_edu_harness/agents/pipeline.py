@@ -17,6 +17,7 @@ from ..handoff import (
 )
 from ..zhipu_client import ZhipuClient
 from . import load_prompt, role_system_prompt
+from ..role_routing import resolve_role_params
 
 
 def _extract_tts_narration(script: str) -> str:
@@ -101,10 +102,21 @@ def _scene_syntax_errors(candidate: Path) -> list[str]:
 
 
 class AgentPipeline:
-    def __init__(self, client: ZhipuClient, candidate: Path, request: dict[str, Any]) -> None:
+    def __init__(
+        self,
+        client: ZhipuClient,
+        candidate: Path,
+        request: dict[str, Any],
+        *,
+        config: dict[str, Any] | None = None,
+    ) -> None:
         self.client = client
         self.candidate = candidate
         self.request = request
+        self.config = config or {}
+
+    def _role_kwargs(self, role: str) -> dict[str, Any]:
+        return resolve_role_params(self.config, role)
 
     def run_planner(self) -> dict[str, Any]:
         system = role_system_prompt("planner")
@@ -117,7 +129,8 @@ class AgentPipeline:
             [
                 {"role": "system", "content": system},
                 {"role": "user", "content": user},
-            ]
+            ],
+            **self._role_kwargs("planner"),
         )
         write_json(self.candidate / "PLAN.json", plan)
         md = [
@@ -156,7 +169,8 @@ class AgentPipeline:
             [
                 {"role": "system", "content": system},
                 {"role": "user", "content": user},
-            ]
+            ],
+            **self._role_kwargs("writer"),
         )
         script = script.strip() + "\n"
         (self.candidate / "SCRIPT.md").write_text(script, encoding="utf-8")
@@ -178,7 +192,8 @@ class AgentPipeline:
             [
                 {"role": "system", "content": system},
                 {"role": "user", "content": user},
-            ]
+            ],
+            **self._role_kwargs("writer"),
         )
 
     def _coder_once(self, user: str) -> list[str]:
@@ -187,7 +202,8 @@ class AgentPipeline:
             [
                 {"role": "system", "content": system},
                 {"role": "user", "content": user},
-            ]
+            ],
+            **self._role_kwargs("coder"),
         )
         (self.candidate / "CODER_RAW.md").write_text(code_text, encoding="utf-8")
         return _write_scenes_from_coder(code_text, self.candidate)
@@ -263,7 +279,8 @@ class AgentPipeline:
             [
                 {"role": "system", "content": system},
                 {"role": "user", "content": user},
-            ]
+            ],
+            **self._role_kwargs("reviewer"),
         )
         write_json(self.candidate / "AUDIT.json", audit)
         return audit

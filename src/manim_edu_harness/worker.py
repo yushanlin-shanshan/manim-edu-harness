@@ -48,12 +48,13 @@ def worker_generate(
     glm: GLMClient,
     *,
     fix_feedback: str | None = None,
+    config: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     """Generate PLAN/SCRIPT/scenes into candidate/. Returns WORKER_RESULT dict."""
     candidate = Path(candidate)
     candidate.mkdir(parents=True, exist_ok=True)
     request = _normalize_kp(kp)
-    pipe = AgentPipeline(glm, candidate, request)
+    pipe = AgentPipeline(glm, candidate, request, config=config)
     # Ensure checklist exists even on FIX-only path
     if not (candidate / "KP_CHECKLIST.json").is_file():
         write_kp_checklist(candidate, request, kp)

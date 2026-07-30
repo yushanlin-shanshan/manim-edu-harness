@@ -21,17 +21,40 @@
     "quality": "l"
   },
   "pipeline": {
-    "agents": ["planner", "writer", "coder", "reviewer"],
+    "agents": [
+      "planner",
+      "writer",
+      "coder",
+      "reviewer"
+    ],
     "tts_enabled": true,
     "short_drama": {
-      "target_duration_sec": [45, 90],
-      "scenes_per_episode": [3, 6],
+      "target_duration_sec": [
+        45,
+        90
+      ],
+      "scenes_per_episode": [
+        3,
+        6
+      ],
       "style": "理科知识点短剧：人物对话驱动 + Manim 可视化讲解"
     }
   },
   "verification_commands": [
-    ["{python}", "-m", "compileall", "-q", "scenes"],
-    ["{python}", "-m", "manim_edu_harness.verify_manim", "--candidate", "."]
+    [
+      "{python}",
+      "-m",
+      "compileall",
+      "-q",
+      "scenes"
+    ],
+    [
+      "{python}",
+      "-m",
+      "manim_edu_harness.verify_manim",
+      "--candidate",
+      "."
+    ]
   ],
   "review_policy": {
     "require_plan": true,
@@ -60,5 +83,20 @@
   "learning": {
     "min_count": 2,
     "auto_apply": false
+  },
+  "roles": {
+    "planner": {
+      "temperature": 0.3
+    },
+    "writer": {
+      "temperature": 0.45
+    },
+    "coder": {
+      "temperature": 0.25,
+      "max_tokens": 8192
+    },
+    "reviewer": {
+      "temperature": 0.1
+    }
   }
 }

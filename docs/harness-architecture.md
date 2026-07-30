@@ -51,6 +51,23 @@ Config (`harness.config.json`):
 
 Pattern catalog: [`trace_learn.py`](../src/manim_edu_harness/trace_learn.py) (`PATTERNS`). Mitchell rule still prefers hard gates in `rule_gate.py` when a failure is deterministic.
 
+
+## Phase 3
+
+### JSON repair + per-stage model routing
+
+- LLM JSON: [`json_repair.py`](../src/manim_edu_harness/json_repair.py) via `ZhipuClient.chat_json` (stdlib only).
+- Role params: top-level `"roles"` in `harness.config.json` (model / temperature / max_tokens); merged by [`role_routing.resolve_role_params`](../src/manim_edu_harness/role_routing.py) and passed from `AgentPipeline`.
+
+```json
+"roles": {
+  "planner":  { "temperature": 0.3 },
+  "writer":   { "temperature": 0.45 },
+  "coder":    { "temperature": 0.25, "max_tokens": 8192 },
+  "reviewer": { "temperature": 0.1 }
+}
+```
+
 ## Skill registry (ClawHub-style)
 
 - Catalog: [`prompts/skills/registry.json`](../prompts/skills/registry.json)

@@ -155,7 +155,7 @@ def reviewer_review(
         "audience": kp.get("audience"),
         "language": kp.get("language") or "zh-CN",
     }
-    pipe = AgentPipeline(glm, candidate, request)
+    pipe = AgentPipeline(glm, candidate, request, config=config)
     with TraceSpan(candidate, "review"):
         audit = pipe.run_reviewer(plan, script, scenes, verification)
 

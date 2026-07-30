@@ -132,7 +132,11 @@ class EpisodeLoop:
         try:
             with TraceSpan(candidate, "worker_generate", attempt=attempt):
                 worker_result = worker_generate(
-                    kp, candidate, self.client, fix_feedback=fix_feedback
+                    kp,
+                    candidate,
+                    self.client,
+                    fix_feedback=fix_feedback,
+                    config=self.config,
                 )
         except ZhipuError as exc:
             print(f"WARNING: GLM network on attempt {attempt}: {exc}")
