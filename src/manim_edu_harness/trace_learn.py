@@ -77,16 +77,37 @@ PATTERNS: tuple[LearnedPattern, ...] = (
     LearnedPattern(
         id="axes-i2gp-not-get-point",
         skill_id="latex_symbols",
-        description="Use axes.i2gp/c2p instead of graph.get_point",
+        description="Use axes.i2gp/c2p instead of graph.get_point / get_point_from_proportion",
         matchers=_rx(
             r"graph\.get_point",
             r"use axes\.i2gp",
             r"\.get_point\s*\(",
+            r"get_point_from_proportion",
+            r"Mobject\.__getattr__\.<locals>\.getter",
         ),
         patch_body=(
-            "## Learned from traces: graph point lookup\n\n"
-            "- Forbidden: `graph.get_point(...)`.\n"
-            "- Use `axes.i2gp(x, graph)` or `axes.c2p(x, y)`.\n"
+            "## Learned from traces: graph / axes point lookup\n\n"
+            "- Forbidden: `graph.get_point(...)`, `axes.x_axis.get_point_from_proportion(...)`.\n"
+            "- Use `axes.i2gp(x, graph)` or `axes.c2p(x, y)` for coordinates.\n"
+            "- Interval markers: `Dot(axes.c2p(a, 0))` / `Line(axes.c2p(a,0), axes.c2p(b,0))`.\n"
+        ),
+        roles_hint=("coder",),
+    ),
+    LearnedPattern(
+        id="manimcolor-types",
+        skill_id="visual_safety",
+        description="ManimColor only accepts int/str/RGB list — avoid invalid color values",
+        matchers=_rx(
+            r"ManimColor only accepts",
+            r"TypeError:.*ManimColor",
+        ),
+        patch_body=(
+            "## Learned from traces: ManimColor types\n\n"
+            "- Colors must be Manim constants (`BLUE`, `TEAL`, `ORANGE`, …) or `COLOR_SYSTEM[...]` values.\n"
+            "- Forbidden: arbitrary hex strings / RGB tuples that are not Manim-accepted types "
+            "when passed where ManimColor is required.\n"
+            "- Prefer `color=COLOR_SYSTEM[\"primary\"]` / constructor kwargs; "
+            "never invent `ManimColor([...])` with floats.\n"
         ),
         roles_hint=("coder",),
     ),

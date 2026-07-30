@@ -45,3 +45,11 @@ def clear_board(self):
 - Rule gate auto-injects COLOR_SYSTEM when missing; do not rely on injection alone—emit it in the first coder draft.
 <!-- /learned:color-system-nameerror -->
 
+<!-- learned:manimcolor-types -->
+<!-- count=2 updated=2026-07-30T09:54Z -->
+## Learned from traces: ManimColor types
+
+- Colors must be Manim constants (`BLUE`, `TEAL`, `ORANGE`, …) or `COLOR_SYSTEM[...]` values.
+- Forbidden: arbitrary hex strings / RGB tuples that are not Manim-accepted types when passed where ManimColor is required.
+- Prefer `color=COLOR_SYSTEM["primary"]` / constructor kwargs; never invent `ManimColor([...])` with floats.
+<!-- /learned:manimcolor-types -->
