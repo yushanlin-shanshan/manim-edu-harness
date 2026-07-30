@@ -23,3 +23,5 @@
 - 阶段间硬清屏；阶段内三态。
 - 禁止直接 A→B；内容少则加特写/变式。
 - TTS 旁白口语化（「f of a」「德尔塔 x 趋于零」）。
+
+{{snippet:speech-guidelines}}

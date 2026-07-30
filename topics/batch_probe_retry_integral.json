@@ -1,0 +1,24 @@
+{
+  "description": "Retry the two wide-probe FIX_UNRESOLVED KPs after skill/gate hardening",
+  "knowledge_points": [
+    {
+      "id": "kp-definite-integral-area",
+      "title": "定积分的几何意义：曲边梯形面积",
+      "topic": "定积分：黎曼和逼近曲边梯形面积",
+      "major": "数学 / 微积分",
+      "audience": "高中 / 大一",
+      "language": "zh-CN",
+      "key_points": [
+        "定义：∫_a^b f(x)dx = lim_{n→∞} Σ f(x_i*)Δx（黎曼和）",
+        "条件：f 在 [a,b] 上可积（连续即可）",
+        "几何：上方为正面积，下方为负面积",
+        "微积分基本定理：F(b)-F(a)"
+      ],
+      "must_teach": [
+        "公式只用 MathTex + TransformMatchingTex（见 advanced_animations）；禁止 Text 混入 MatchingTex",
+        "黎曼矩形分步 Create，勿把图形塞进 TransformMatchingTex",
+        "# [KP-1]..[KP-k]；setup/derivation/conclusion_phase；COLOR_SYSTEM；clear_board；safe_move；load_and_play_narration"
+      ]
+    }
+  ]
+}

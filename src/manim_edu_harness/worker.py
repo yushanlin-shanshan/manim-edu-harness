@@ -9,7 +9,9 @@ from typing import Any
 from .agents.pipeline import AgentPipeline
 from .fsutil import write_json
 from .glm_client import GLMClient
+from .handoff import append_progress, write_kp_checklist
 from .textutil import sanitize_text
+from .trace import TraceSpan
 
 
 def _normalize_kp(kp: dict[str, Any]) -> dict[str, Any]:
@@ -34,7 +36,7 @@ def _normalize_kp(kp: dict[str, Any]) -> dict[str, Any]:
         "format": kp.get("format") or "理科知识点短剧",
         "constraints": constraints,
     }
-    for key in ("must_teach", "id"):
+    for key in ("must_teach", "id", "key_points"):
         if key in kp:
             req[key] = kp[key]
     return req
@@ -46,12 +48,16 @@ def worker_generate(
     glm: GLMClient,
     *,
     fix_feedback: str | None = None,
+    config: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     """Generate PLAN/SCRIPT/scenes into candidate/. Returns WORKER_RESULT dict."""
     candidate = Path(candidate)
     candidate.mkdir(parents=True, exist_ok=True)
     request = _normalize_kp(kp)
-    pipe = AgentPipeline(glm, candidate, request)
+    pipe = AgentPipeline(glm, candidate, request, config=config)
+    # Ensure checklist exists even on FIX-only path
+    if not (candidate / "KP_CHECKLIST.json").is_file():
+        write_kp_checklist(candidate, request, kp)
 
     plan_path = candidate / "PLAN.json"
     script_path = candidate / "SCRIPT.md"
@@ -66,11 +72,16 @@ def worker_generate(
             "fix_guidance": fix_feedback,
             "blockers": [fix_feedback],
         }
-        scenes = pipe.run_fix(audit, plan, script)
+        with TraceSpan(candidate, "coder_fix"):
+            scenes = pipe.run_fix(audit, plan, script)
     else:
-        plan = pipe.run_planner()
-        script = pipe.run_writer(plan)
-        scenes = pipe.run_coder(plan, script)
+        with TraceSpan(candidate, "planner"):
+            plan = pipe.run_planner()
+        with TraceSpan(candidate, "writer"):
+            script = pipe.run_writer(plan)
+        with TraceSpan(candidate, "coder"):
+            scenes = pipe.run_coder(plan, script)
+        append_progress(candidate, f"Initial generate done; scenes={scenes}")
 
     episode = {
         "title": plan.get("title") or request.get("title") or request.get("topic"),

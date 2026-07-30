@@ -1,0 +1,17 @@
+{
+  "description": "OpenMAIC-style pre-fix vs post-fix discrimination for rule_gate auto_fix",
+  "variants": ["pre_fix", "post_fix"],
+  "scenarios": [
+    {
+      "id": "set-color-autofix",
+      "description": "pre_fix must FAIL on .set_color; post_fix (auto_rewrite) must PASS",
+      "fixture": "evals/fixtures/set_color_scene.py",
+      "require_color_system": true,
+      "expect": {
+        "pre_fix_ok": false,
+        "post_fix_ok": true,
+        "post_fix_label": "set_color→set_fill"
+      }
+    }
+  ]
+}

@@ -40,3 +40,7 @@ partial_movie_files/
 .idea/
 .vscode/
 *.swp
+
+# generated eval scorecards
+evals/last_scorecard.json
+evals/last_variant_scorecard.json

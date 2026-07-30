@@ -1,15 +1,17 @@
-"""Core harness: isolated candidate → multi-agent produce → verify → review → promote."""
+"""Core harness: interactive ACTIVE.json lifecycle over the shared EpisodeLoop."""
 
 from __future__ import annotations
 
 import json
 import shutil
 import sys
+import time
 import traceback
 from pathlib import Path
 from typing import Any
 
-from .agents.pipeline import AgentPipeline
+from .batch_quota import BatchQuota
+from .control_plane import EpisodeLoop, make_llm_client, run_batch_item
 from .fsutil import (
     copy_tree,
     fingerprint,
@@ -21,8 +23,7 @@ from .fsutil import (
     read_json,
     write_json,
 )
-from .verify_manim import verify_candidate
-from .zhipu_client import ZhipuClient
+from .textutil import sanitize_text
 
 
 ACTIVE_STATES = {"RUNNING", "PAUSED", "REVIEWING", "FIXING"}
@@ -108,125 +109,88 @@ class Harness:
             write_json(run_dir / "STATUS.json", meta)
             raise
 
-    def _client(self) -> ZhipuClient:
-        z = self.config.get("zhipu", {})
-        return ZhipuClient(
-            model=z.get("model", "glm-4-plus"),
-            temperature=float(z.get("temperature", 0.4)),
-            max_tokens=int(z.get("max_tokens", 8192)),
-        )
+    def _client(self, *, dry_run: bool = False):
+        return make_llm_client(self.config, dry_run=dry_run)
+
+    def _snapshot_iteration(self, run_dir: Path, candidate: Path, attempt: int) -> None:
+        round_dir = run_dir / "iterations" / f"{attempt:02d}"
+        round_dir.mkdir(parents=True, exist_ok=True)
+        for name in (
+            "VERIFICATION.json",
+            "AUDIT.json",
+            "FINAL_REVIEW.json",
+            "WORKER_RESULT.json",
+            "HANDOFF.json",
+            "RULE_GATE.json",
+            "RENDER_RESULT.json",
+            "TTS_RESULT.json",
+        ):
+            src = candidate / name
+            if src.is_file():
+                shutil.copy2(src, round_dir / name)
 
     def _execute(self, meta: dict[str, Any]) -> dict[str, Any]:
+        """Interactive adapter: seed candidate, then shared EpisodeLoop topology."""
         run_dir = Path(meta["run_dir"])
         candidate = Path(meta["candidate"])
         request = meta["request"]
-        client = self._client()
-        pipe = AgentPipeline(client, candidate, request)
+        dry_run = bool(meta.get("dry_run") or request.get("dry_run"))
+        client = self._client(dry_run=dry_run)
+        loop = EpisodeLoop(self.config, client)
 
-        meta["phase"] = "planner"
-        self._persist(meta)
-        plan = pipe.run_planner()
-
-        meta["phase"] = "writer"
-        self._persist(meta)
-        script = pipe.run_writer(plan)
-
-        meta["phase"] = "coder"
-        self._persist(meta)
-        scenes = pipe.run_coder(plan, script)
-
-        episode = {
-            "title": plan.get("title") or request.get("topic"),
-            "topic": request.get("topic"),
-            "major": request.get("major"),
-            "learning_objectives": plan.get("learning_objectives", []),
-            "scenes": scenes,
-            "style": request.get("style") or self.config.get("pipeline", {}).get("short_drama", {}).get("style"),
-        }
-        write_json(candidate / "EPISODE.json", episode)
-
-        while True:
-            meta["phase"] = "verify"
-            self._persist(meta)
-            verification = verify_candidate(candidate, attempt_render=True)
-            write_json(candidate / "VERIFICATION.json", verification)
-            write_json(
-                candidate / "WORKER_RESULT.json",
-                {
-                    "ok": verification.get("ok", False),
-                    "claims": [
-                        f"Generated short-drama episode for topic={request.get('topic')}",
-                        f"Manim modules: {', '.join(scenes)}",
-                    ],
-                    "scenes": scenes,
-                    "verification_ok": verification.get("ok", False),
-                },
-            )
-
-            meta["phase"] = "review"
-            meta["status"] = "REVIEWING"
-            self._persist(meta)
-            audit = pipe.run_reviewer(plan, script, scenes, verification)
-            verdict = self._adjudicate(verification, audit)
-            final = {
-                "verdict": verdict,
-                "verification_ok": verification.get("ok", False),
-                "audit_verdict": audit.get("verdict"),
-                "review_round": meta["review_round"],
-            }
-            write_json(candidate / "FINAL_REVIEW.json", final)
-            round_dir = run_dir / "iterations" / f"{meta['review_round']:02d}"
-            round_dir.mkdir(parents=True, exist_ok=True)
-            for name in (
-                "VERIFICATION.json",
-                "AUDIT.json",
-                "FINAL_REVIEW.json",
-                "WORKER_RESULT.json",
-            ):
-                src = candidate / name
-                if src.is_file():
-                    shutil.copy2(src, round_dir / name)
-
-            if verdict == "PASS":
-                return self._promote(meta)
-
-            if verdict == "INCONCLUSIVE":
-                meta["status"] = "PAUSED"
+        def on_attempt(outcome) -> None:
+            meta["review_round"] = outcome.attempt
+            if outcome.verdict == "PASS":
+                meta["phase"] = "review"
+                meta["status"] = "REVIEWING"
+            elif outcome.verdict == "INCONCLUSIVE":
                 meta["phase"] = "inconclusive"
-                meta["pause_reason"] = "Missing blocking evidence or environment (e.g. manim)."
-                self._persist(meta)
-                return meta
-
-            # FIX
-            meta["review_round"] += 1
-            if meta["review_round"] > meta["max_reviews"]:
-                meta["status"] = "INCOMPLETE"
-                meta["phase"] = "max_reviews"
-                self._persist(meta)
-                return meta
-            meta["status"] = "FIXING"
-            meta["phase"] = "fix"
+                meta["status"] = "REVIEWING"
+            elif outcome.verdict == "ERROR":
+                meta["phase"] = "failed"
+                meta["status"] = "FAILED"
+            else:
+                meta["phase"] = "fix"
+                meta["status"] = "FIXING"
             self._persist(meta)
-            scenes = pipe.run_fix(audit, plan, script)
-            episode["scenes"] = scenes
-            write_json(candidate / "EPISODE.json", episode)
+            self._snapshot_iteration(run_dir, candidate, outcome.attempt)
 
-    def _adjudicate(self, verification: dict[str, Any], audit: dict[str, Any]) -> str:
-        # Hard code/structure failures force FIX.
-        if not verification.get("ok"):
-            return "FIX"
-        audit_verdict = str(audit.get("verdict", "FIX")).upper()
-        if audit.get("blockers"):
-            return "FIX"
-        if audit_verdict == "FIX":
-            return "FIX"
-        # AST-clean + audit PASS may promote even when LaTeX/FFmpeg missing.
-        # env_blocked alone should not burn repair rounds.
-        if audit_verdict == "PASS" and audit.get("math_ok", True):
-            return "PASS"
-        if verification.get("env_blocked") or audit_verdict == "INCONCLUSIVE":
-            return "INCONCLUSIVE"
-        return "FIX"
+        meta["phase"] = "episode_loop"
+        meta["status"] = "RUNNING"
+        self._persist(meta)
+
+        outcome = loop.run_until_done(
+            request,
+            candidate,
+            max_reviews=int(meta.get("max_reviews") or self.config.get("max_reviews", 3)),
+            dry_run=dry_run,
+            on_attempt=on_attempt,
+        )
+        meta["review_round"] = outcome.attempts
+        meta["loop_status"] = outcome.status
+        meta["loop_reason"] = outcome.reason
+
+        if outcome.verdict == "PASS":
+            return self._promote(meta)
+        if outcome.verdict == "INCONCLUSIVE":
+            meta["status"] = "PAUSED"
+            meta["phase"] = "inconclusive"
+            meta["pause_reason"] = (
+                outcome.reason or "Missing blocking evidence or environment (e.g. manim)."
+            )
+            self._persist(meta)
+            return meta
+        if outcome.verdict == "ERROR":
+            meta["status"] = "FAILED"
+            meta["phase"] = "error"
+            meta["error"] = outcome.reason
+            self._persist(meta)
+            return meta
+
+        meta["status"] = "INCOMPLETE"
+        meta["phase"] = "max_reviews"
+        self._persist(meta)
+        return meta
 
     def _promote(self, meta: dict[str, Any]) -> dict[str, Any]:
         run_dir = Path(meta["run_dir"])
@@ -304,7 +268,6 @@ class Harness:
         meta = read_json(path)
         if meta.get("status") == "PAUSED" and meta.get("phase") == "inconclusive":
             meta["status"] = "RUNNING"
-            # Resume from verification/review on existing candidate
             return self._resume_review_loop(meta)
         if meta.get("status") in ACTIVE_STATES and meta.get("phase") not in ("promoted",):
             raise RuntimeError(
@@ -314,79 +277,63 @@ class Harness:
         raise RuntimeError(f"Cannot continue status={meta.get('status')} phase={meta.get('phase')}")
 
     def _resume_review_loop(self, meta: dict[str, Any]) -> dict[str, Any]:
-        """Re-run verify+review on existing candidate after INCONCLUSIVE pause."""
+        """Resume after INCONCLUSIVE via the same EpisodeLoop topology."""
+        run_dir = Path(meta["run_dir"])
         candidate = Path(meta["candidate"])
         request = meta["request"]
-        plan = read_json(candidate / "PLAN.json")
-        script = (candidate / "SCRIPT.md").read_text(encoding="utf-8")
-        episode = read_json(candidate / "EPISODE.json")
-        scenes = episode.get("scenes", [])
-        client = self._client()
-        pipe = AgentPipeline(client, candidate, request)
+        dry_run = bool(meta.get("dry_run") or request.get("dry_run"))
+        client = self._client(dry_run=dry_run)
+        loop = EpisodeLoop(self.config, client)
 
-        verification = verify_candidate(candidate, attempt_render=True)
-        write_json(candidate / "VERIFICATION.json", verification)
-        audit = pipe.run_reviewer(plan, script, scenes, verification)
-        verdict = self._adjudicate(verification, audit)
-        write_json(
-            candidate / "FINAL_REVIEW.json",
-            {
-                "verdict": verdict,
-                "verification_ok": verification.get("ok", False),
-                "audit_verdict": audit.get("verdict"),
-                "review_round": meta["review_round"],
-                "resumed": True,
-            },
+        start_attempt = int(meta.get("review_round") or 0) + 1
+        max_reviews = int(meta.get("max_reviews") or self.config.get("max_reviews", 3))
+        if start_attempt > max_reviews:
+            meta["status"] = "INCOMPLETE"
+            meta["phase"] = "max_reviews"
+            self._persist(meta)
+            return meta
+
+        fix_feedback = None
+        fix_path = candidate / "FIX_FEEDBACK.md"
+        if fix_path.is_file():
+            fix_feedback = fix_path.read_text(encoding="utf-8").strip() or None
+
+        def on_attempt(outcome) -> None:
+            meta["review_round"] = outcome.attempt
+            meta["status"] = "FIXING" if outcome.verdict == "FIX" else "REVIEWING"
+            self._persist(meta)
+            self._snapshot_iteration(run_dir, candidate, outcome.attempt)
+
+        outcome = loop.run_until_done(
+            request,
+            candidate,
+            max_reviews=max_reviews,
+            dry_run=dry_run,
+            on_attempt=on_attempt,
+            start_attempt=start_attempt,
+            initial_fix_feedback=fix_feedback,
         )
-        if verdict == "PASS":
+        meta["review_round"] = outcome.attempts
+        meta["loop_status"] = outcome.status
+        meta["loop_reason"] = outcome.reason
+
+        if outcome.verdict == "PASS":
             return self._promote(meta)
-        if verdict == "INCONCLUSIVE":
+        if outcome.verdict == "INCONCLUSIVE":
             meta["status"] = "PAUSED"
             meta["phase"] = "inconclusive"
+            meta["pause_reason"] = outcome.reason or meta.get("pause_reason")
             self._persist(meta)
             return meta
-        meta["status"] = "FIXING"
-        meta["review_round"] += 1
-        if meta["review_round"] > meta["max_reviews"]:
-            meta["status"] = "INCOMPLETE"
+        if outcome.verdict == "ERROR":
+            meta["status"] = "FAILED"
+            meta["error"] = outcome.reason
             self._persist(meta)
             return meta
+        meta["status"] = "INCOMPLETE"
+        meta["phase"] = "max_reviews"
         self._persist(meta)
-        scenes = pipe.run_fix(audit, plan, script)
-        episode["scenes"] = scenes
-        write_json(candidate / "EPISODE.json", episode)
-        # Continue full loop from verify
-        meta["status"] = "RUNNING"
-        # Re-enter execute-like loop by recursive call pattern
-        while True:
-            verification = verify_candidate(candidate, attempt_render=True)
-            write_json(candidate / "VERIFICATION.json", verification)
-            audit = pipe.run_reviewer(plan, script, scenes, verification)
-            verdict = self._adjudicate(verification, audit)
-            write_json(
-                candidate / "FINAL_REVIEW.json",
-                {
-                    "verdict": verdict,
-                    "verification_ok": verification.get("ok", False),
-                    "audit_verdict": audit.get("verdict"),
-                    "review_round": meta["review_round"],
-                },
-            )
-            if verdict == "PASS":
-                return self._promote(meta)
-            if verdict == "INCONCLUSIVE":
-                meta["status"] = "PAUSED"
-                meta["phase"] = "inconclusive"
-                self._persist(meta)
-                return meta
-            meta["review_round"] += 1
-            if meta["review_round"] > meta["max_reviews"]:
-                meta["status"] = "INCOMPLETE"
-                self._persist(meta)
-                return meta
-            scenes = pipe.run_fix(audit, plan, script)
-            episode["scenes"] = scenes
-            write_json(candidate / "EPISODE.json", episode)
+        return meta
 
     def stop(self) -> dict[str, Any]:
         path = self._state_path()
@@ -400,23 +347,77 @@ class Harness:
         self._persist(meta)
         return meta
 
-    def batch(self, topics_file: Path | None = None, *, limit: int | None = None) -> list[dict[str, Any]]:
-        topics_file = topics_file or (self.root / self.config.get("batch", {}).get("topics_file", "topics/seed_stem.json"))
+    def batch(
+        self,
+        topics_file: Path | None = None,
+        *,
+        limit: int | None = None,
+        start: int = 0,
+        dry_run: bool = False,
+        delivered_root: Path | None = None,
+    ) -> list[dict[str, Any]]:
+        """Production batch via shared EpisodeLoop → workspace/delivered/.
+
+        Prefer this over per-topic Harness.start() so TTS/renderer/reviewer match
+        ``batch_harness.py``.
+        """
+        topics_file = topics_file or (
+            self.root / self.config.get("batch", {}).get("topics_file", "topics/seed_stem.json")
+        )
         payload = read_json(topics_file)
-        topics = payload.get("topics", payload if isinstance(payload, list) else [])
+        if isinstance(payload, list):
+            topics = payload
+        else:
+            topics = (
+                payload.get("topics")
+                or payload.get("knowledge_points")
+                or payload.get("items")
+                or []
+            )
+        topics = topics[max(0, int(start)) :]
         if limit is not None:
             topics = topics[:limit]
-        results = []
-        for topic in topics:
-            # Clear completed ACTIVE so next can start
-            if self._state_path().is_file():
-                prev = read_json(self._state_path())
-                if prev.get("status") in ACTIVE_STATES:
-                    raise RuntimeError("Cannot batch while a run is active/paused unfinished")
+
+        client = self._client(dry_run=dry_run)
+        delivered = delivered_root or (self.workspace / "delivered")
+        delivered.mkdir(parents=True, exist_ok=True)
+        self.runs_dir.mkdir(parents=True, exist_ok=True)
+
+        results: list[dict[str, Any]] = []
+        quota = BatchQuota.from_config(self.config)
+        t0 = time.time()
+        total = len(topics)
+        for i, topic in enumerate(topics, 1):
             req = topic if isinstance(topic, dict) else {"topic": str(topic)}
-            if "topic" not in req:
-                raise ValueError(f"topic entry missing 'topic': {req}")
-            results.append(self.start(req))
+            if "topic" not in req and "title" not in req:
+                raise ValueError(f"topic entry missing 'topic'/'title': {req}")
+            title = str(req.get("title") or req.get("topic") or f"item-{i}")
+            if quota.should_stop() or quota.remaining() <= 0:
+                results.append(
+                    quota.mark_skipped(title=sanitize_text(title), index=i, total=total)
+                )
+                for j in range(i + 1, total + 1):
+                    rest = topics[j - 1]
+                    rest_req = rest if isinstance(rest, dict) else {"topic": str(rest)}
+                    rest_title = str(
+                        rest_req.get("title") or rest_req.get("topic") or f"item-{j}"
+                    )
+                    results.append(
+                        quota.mark_skipped(
+                            title=sanitize_text(rest_title), index=j, total=total
+                        )
+                    )
+                break
+            row = run_batch_item(
+                req,
+                self.config,
+                client,
+                self.runs_dir,
+                delivered,
+                dry_run=dry_run,
+            )
+            results.append(row)
+            quota.record(row, elapsed_seconds=time.time() - t0)
         return results
 
 

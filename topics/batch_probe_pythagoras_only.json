@@ -1,0 +1,24 @@
+{
+  "knowledge_points": [
+    {
+      "id": "kp-pythagoras-probe",
+      "title": "勾股定理",
+      "topic": "勾股定理：直角三角形边长关系的面积证明",
+      "major": "数学 / 几何",
+      "audience": "初高中",
+      "language": "zh-CN",
+      "key_points": [
+        "定义：直角三角形直角边 a,b，斜边 c",
+        "已知：∠C=90°",
+        "证明思路：外正方形面积 (a+b)^2 = 4*(ab/2) + c^2",
+        "结论：a^2 + b^2 = c^2"
+      ],
+      "must_teach": [
+        "MathTex 形式化 + 定义域/条件；# [KP-k]",
+        "无跳跃推导；TransformMatchingTex",
+        "三态：活跃/背景变暗/离场；原子化 play≤2",
+        "clear_board；safe_move；load_and_play_narration"
+      ]
+    }
+  ]
+}

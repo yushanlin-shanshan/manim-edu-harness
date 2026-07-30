@@ -1,4 +1,8 @@
-"""Reviewer module — independent assessor + FINAL_REVIEW adjudication."""
+"""Reviewer module — independent assessor + FINAL_REVIEW adjudication.
+
+Evaluator path: deterministic rule_gate first (no write tools conceptually),
+then fresh-context LLM review. Shared adjudication policy for batch + Harness.
+"""
 
 from __future__ import annotations
 
@@ -7,15 +11,24 @@ from pathlib import Path
 from typing import Any
 
 from .agents.pipeline import AgentPipeline
+from .layout_scorer import layout_issues_for_review
 from .fsutil import write_json
 from .glm_client import GLMClient
+from .handoff import append_progress, write_handoff_from_review
+from .rule_gate import run_rule_gate
 from .textutil import sanitize_text
+from .trace import TraceSpan
 
 
 def _is_env_blocker(text: str) -> bool:
     lower = text.lower()
     keys = ("latex", "pdflatex", "xelatex", "ffmpeg", "渲染环境", "未安装", "env_blocked")
     return any(k in lower for k in keys)
+
+
+def adjudicate(verification: dict[str, Any], audit: dict[str, Any]) -> str:
+    """Single adjudication policy (batch + Harness should call this)."""
+    return _adjudicate(verification, audit)
 
 
 def _adjudicate(verification: dict[str, Any], audit: dict[str, Any]) -> str:
@@ -58,8 +71,10 @@ def reviewer_review(
     candidate: Path,
     config: dict[str, Any],
     glm: GLMClient,
+    *,
+    attempt: int | None = None,
 ) -> dict[str, Any]:
-    """Write AUDIT.json + FINAL_REVIEW.json; return final review dict."""
+    """Write RULE_GATE / AUDIT / FINAL_REVIEW / HANDOFF; return final review dict."""
     candidate = Path(candidate)
     plan = {}
     plan_path = candidate / "PLAN.json"
@@ -83,16 +98,90 @@ def reviewer_review(
     if not scenes and (candidate / "scenes").is_dir():
         scenes = [p.name for p in sorted((candidate / "scenes").glob("*.py")) if p.name != "__init__.py"]
 
+    policy = config.get("review_policy") or {}
+    require_color = bool(policy.get("require_color_system", True))
+    # Auto-fix runs pre-render in batch_harness; post-render gate is check-only by default.
+    pre_render = bool(policy.get("rule_gate_pre_render", True))
+    from .feature_flags import is_rule_gate_auto_fix_enabled
+
+    auto_fix = is_rule_gate_auto_fix_enabled(config) and not pre_render
+    with TraceSpan(candidate, "rule_gate", require_color_system=require_color) as span:
+        rule_gate = run_rule_gate(
+            candidate,
+            require_color_system=require_color,
+            auto_fix=auto_fix,
+        )
+        span.ok = bool(rule_gate.get("ok"))
+        if rule_gate.get("auto_fix", {}).get("applied"):
+            append_progress(
+                candidate,
+                "Rule gate auto-fix: " + ", ".join(rule_gate["auto_fix"].get("fixes") or []),
+            )
+
+    # Deterministic hard gate — FIX without LLM when iron-law gaps remain after auto_fix.
+    if not rule_gate.get("ok"):
+        audit = {
+            "verdict": "FIX",
+            "math_ok": True,
+            "blockers": list(rule_gate.get("failures") or []),
+            "majors": [],
+            "minors": [],
+            "fix_guidance": "Rule gate failed: " + "; ".join(rule_gate.get("failures") or []),
+            "claims": ["rule_gate"],
+            "skipped_llm": True,
+            "auto_fix": rule_gate.get("auto_fix"),
+        }
+        write_json(candidate / "AUDIT.json", audit)
+        verdict = "FIX"
+        reason = sanitize_text(audit["fix_guidance"])
+        final = {
+            "verdict": verdict,
+            "reason": reason,
+            "verification_ok": bool(verification.get("ok")),
+            "audit_verdict": "FIX",
+            "math_ok": True,
+            "render_status": verification.get("render_status"),
+            "rule_gate_ok": False,
+            "policy_version": config.get("review_protocol_version", 2),
+        }
+        write_json(candidate / "FINAL_REVIEW.json", final)
+        write_handoff_from_review(
+            candidate,
+            final_review=final,
+            rule_gate=rule_gate,
+            verification=verification,
+            config=config,
+            attempt=attempt,
+        )
+        append_progress(candidate, f"Rule gate FIX: {reason}")
+        return final
+
     request = {
         "topic": kp.get("topic") or kp.get("title"),
         "major": kp.get("major"),
         "audience": kp.get("audience"),
         "language": kp.get("language") or "zh-CN",
     }
-    pipe = AgentPipeline(glm, candidate, request)
-    audit = pipe.run_reviewer(plan, script, scenes, verification)
+    pipe = AgentPipeline(glm, candidate, request, config=config)
+    with TraceSpan(candidate, "review"):
+        audit = pipe.run_reviewer(plan, script, scenes, verification)
 
-    verdict = _adjudicate(verification, audit)
+    layout_path = candidate / "LAYOUT_SCORE.json"
+    layout = {}
+    if layout_path.is_file():
+        try:
+            layout = json.loads(layout_path.read_text(encoding="utf-8"))
+        except Exception:
+            layout = {}
+    layout_blockers, layout_majors = layout_issues_for_review(layout)
+    if layout_blockers or layout_majors:
+        audit = {
+            **audit,
+            "blockers": list(audit.get("blockers") or []) + layout_blockers,
+            "majors": list(audit.get("majors") or []) + layout_majors,
+        }
+
+    verdict = adjudicate(verification, audit)
     reason_parts = []
     if audit.get("blockers"):
         reason_parts.extend(str(x) for x in audit["blockers"])
@@ -109,7 +198,22 @@ def reviewer_review(
         "audit_verdict": audit.get("verdict"),
         "math_ok": audit.get("math_ok", True),
         "render_status": verification.get("render_status"),
+        "rule_gate_ok": True,
+        "layout_overall": (layout.get("score") or {}).get("overall") if layout else None,
+        "layout_hard_fail": bool(layout.get("hard_fail")) if layout else False,
         "policy_version": config.get("review_protocol_version", 2),
     }
     write_json(candidate / "FINAL_REVIEW.json", final)
+    if verdict == "FIX":
+        write_handoff_from_review(
+            candidate,
+            final_review=final,
+            rule_gate=rule_gate,
+            verification=verification,
+            config=config,
+            attempt=attempt,
+        )
+        append_progress(candidate, f"Review FIX: {reason[:400]}")
+    else:
+        append_progress(candidate, f"Review {verdict}")
     return final

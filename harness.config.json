@@ -21,21 +21,49 @@
     "quality": "l"
   },
   "pipeline": {
-    "agents": ["planner", "writer", "coder", "reviewer"],
+    "agents": [
+      "planner",
+      "writer",
+      "coder",
+      "reviewer"
+    ],
+    "tts_enabled": true,
     "short_drama": {
-      "target_duration_sec": [45, 90],
-      "scenes_per_episode": [3, 6],
+      "target_duration_sec": [
+        45,
+        90
+      ],
+      "scenes_per_episode": [
+        3,
+        6
+      ],
       "style": "理科知识点短剧：人物对话驱动 + Manim 可视化讲解"
     }
   },
   "verification_commands": [
-    ["{python}", "-m", "compileall", "-q", "scenes"],
-    ["{python}", "-m", "manim_edu_harness.verify_manim", "--candidate", "."]
+    [
+      "{python}",
+      "-m",
+      "compileall",
+      "-q",
+      "scenes"
+    ],
+    [
+      "{python}",
+      "-m",
+      "manim_edu_harness.verify_manim",
+      "--candidate",
+      "."
+    ]
   ],
   "review_policy": {
     "require_plan": true,
     "require_math_accuracy": true,
     "require_renderable_manim": true,
+    "require_color_system": true,
+    "require_safe_move": true,
+    "rule_gate_auto_fix": true,
+    "rule_gate_pre_render": true,
     "max_dynamic_checks": 8,
     "per_check_timeout_seconds": 600,
     "total_check_timeout_seconds": 1800,
@@ -46,10 +74,64 @@
       "script_coherence",
       "visual_layout",
       "safety_content"
-    ]
+    ],
+    "vlm_layout": {
+      "enabled": false,
+      "model": "glm-4v-plus",
+      "max_frames": 3,
+      "min_overall": 6,
+      "hard_fail_below": 4,
+      "block_on_hard_fail": true
+    }
   },
   "batch": {
     "concurrency": 1,
-    "topics_file": "topics/knowledge_points.json"
+    "topics_file": "topics/knowledge_points.json",
+    "quota": {
+      "max_episodes": null,
+      "max_attempts_total": null,
+      "max_errors": null,
+      "max_elapsed_seconds": null
+    }
+  },
+  "learning": {
+    "min_count": 2,
+    "auto_apply": false
+  },
+  "roles": {
+    "planner": {
+      "temperature": 0.3
+    },
+    "writer": {
+      "temperature": 0.45
+    },
+    "coder": {
+      "temperature": 0.25,
+      "max_tokens": 8192
+    },
+    "reviewer": {
+      "temperature": 0.1
+    },
+    "layout_scorer": {
+      "model": "glm-4v-plus",
+      "temperature": 0.0,
+      "max_tokens": 2048
+    }
+  },
+  "fix_context": {
+    "max_failed_checks": 8,
+    "max_failed_check_chars": 400,
+    "max_fix_guidance_chars": 1200,
+    "scene_content_chars": 6000,
+    "scene_id_list_chars": 400,
+    "compact_on_attempt": true,
+    "max_prior_attempts": 3,
+    "max_attempt_summary_chars": 600
+  },
+  "retry": {
+    "max_retries": 5,
+    "base_delay_ms": 1000,
+    "max_delay_ms": 16000,
+    "deadline_seconds": null
   }
 }

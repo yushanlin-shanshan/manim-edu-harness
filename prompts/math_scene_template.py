@@ -127,7 +127,7 @@ class EpisodeScene(Scene):
         # 条件与标题转入背景态（保留上下文，不抢焦点）
         self.play(title.animate.set_opacity(0.3))
         self.wait(0.5)
-        self.play(condition.animate.set_color(GREY).set_opacity(0.35))
+        self.play(condition.animate.set_fill(GREY).set_opacity(0.35))
         self.wait(0.5)
 
         # 定义保持活跃；锚定框稍后离场
