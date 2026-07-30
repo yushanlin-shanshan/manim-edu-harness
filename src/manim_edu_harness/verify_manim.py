@@ -90,6 +90,8 @@ def try_manim_render(candidate: Path, module: Path, quality: str = "l") -> tuple
       ok | skipped | env_blocked | failed
     """
     manim_bin = os.environ.get("MANIM_BIN", "manim")
+    candidate = Path(candidate).resolve()
+    module = Path(module).resolve()
     scene_class = None
     tree = ast.parse(module.read_text(encoding="utf-8"))
     for n in tree.body:
@@ -99,12 +101,21 @@ def try_manim_render(candidate: Path, module: Path, quality: str = "l") -> tuple
     if not scene_class:
         return "failed", "no scene class"
 
+    try:
+        module_arg = str(module.relative_to(candidate))
+    except ValueError:
+        # Module outside candidate — fall back to absolute path with cwd=module parent
+        module_arg = str(module)
+        cwd = str(module.parent)
+    else:
+        cwd = str(candidate)
+
     cmd = [
         manim_bin,
         "-q",
         quality,
         "--disable_caching",
-        str(module),
+        module_arg,
         scene_class,
     ]
     env = os.environ.copy()
@@ -114,7 +125,7 @@ def try_manim_render(candidate: Path, module: Path, quality: str = "l") -> tuple
     try:
         proc = subprocess.run(
             cmd,
-            cwd=str(candidate),
+            cwd=cwd,
             capture_output=True,
             text=True,
             timeout=int(os.environ.get("MANIM_RENDER_TIMEOUT", "240")),
@@ -141,6 +152,7 @@ def verify_candidate(candidate: Path, *, attempt_render: bool = True) -> dict:
     By default, missing LaTeX/FFmpeg is env_blocked (does not fail AST gate).
     Set MANIM_REQUIRE_RENDER=1 to treat render failure as hard error.
     """
+    candidate = Path(candidate).resolve()
     errors = check_structure(candidate)
     modules = _find_scene_modules(candidate)
     errors.extend(check_ast(modules))
