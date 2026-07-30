@@ -71,6 +71,8 @@ def reviewer_review(
     candidate: Path,
     config: dict[str, Any],
     glm: GLMClient,
+    *,
+    attempt: int | None = None,
 ) -> dict[str, Any]:
     """Write RULE_GATE / AUDIT / FINAL_REVIEW / HANDOFF; return final review dict."""
     candidate = Path(candidate)
@@ -147,6 +149,7 @@ def reviewer_review(
             rule_gate=rule_gate,
             verification=verification,
             config=config,
+            attempt=attempt,
         )
         append_progress(candidate, f"Rule gate FIX: {reason}")
         return final
@@ -206,6 +209,7 @@ def reviewer_review(
             rule_gate=rule_gate,
             verification=verification,
             config=config,
+            attempt=attempt,
         )
         append_progress(candidate, f"Review FIX: {reason[:400]}")
     else:

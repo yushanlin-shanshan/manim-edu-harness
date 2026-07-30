@@ -8,6 +8,7 @@ from pathlib import Path
 from typing import Any
 
 from .context_budget import compact_error_line, compact_failed_checks, fix_context_settings
+from .handoff_compact import compact_handoff_with_history
 from .fsutil import write_json
 
 
@@ -80,6 +81,7 @@ def write_handoff_from_review(
     rule_gate: dict[str, Any] | None = None,
     verification: dict[str, Any] | None = None,
     config: dict[str, Any] | None = None,
+    attempt: int | None = None,
 ) -> Path:
     """Rule-based handoff when LLM does not emit structured fields."""
     candidate = Path(candidate)
@@ -114,6 +116,22 @@ def write_handoff_from_review(
         failed_checks=failed,
         fix_guidance=guidance,
         open_checklist=open_items,
+    )
+    # Infer attempt from history length + 1 when not provided
+    if attempt is None:
+        hist_path = candidate / "HANDOFF_HISTORY.jsonl"
+        if hist_path.is_file():
+            attempt = sum(1 for ln in hist_path.read_text(encoding="utf-8").splitlines() if ln.strip()) + 1
+        else:
+            attempt = 1
+    handoff = compact_handoff_with_history(
+        candidate,
+        handoff,
+        attempt=int(attempt),
+        config=config,
+        final_review=final_review,
+        rule_gate=rule_gate,
+        verification=verification,
     )
     path = candidate / "HANDOFF.json"
     write_json(path, handoff)

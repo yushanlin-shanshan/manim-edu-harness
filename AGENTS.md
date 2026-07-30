@@ -20,6 +20,7 @@ Harness Engineering (Mitchell): when an agent makes a mistake, **engineer the ha
 - **VLM layout (optional):** `review_policy.vlm_layout.enabled` → frame sample + `LAYOUT_SCORE.json`; hard_fail can force FIX
 - **FIX context budget:** `fix_context` caps HANDOFF error blobs; syntax-FIX uses full→ids→omitted scene tiers
 - **Plan fallbacks:** incomplete planner JSON gets Setup/Derivation/Conclusion defaults via `plan_fallback`
+- **HANDOFF compaction:** multi-attempt FIX keeps bounded `prior_attempts` / `prior_summary` (`handoff_compact.py`)
 - **Snippets:** `json-output-rules` + `speech-guidelines` for planner/writer/reviewer TTS/JSON hygiene
 - **Pre-render order:** `check → auto_fix → render → review` (`rule_gate_pre_render=true`) so missing COLOR_SYSTEM does not burn a FIX round
 - `review_policy.require_color_system` defaults **true** in batch + evals (same bar)

@@ -68,6 +68,12 @@ Pattern catalog: [`trace_learn.py`](../src/manim_edu_harness/trace_learn.py) (`P
 }
 ```
 
+### Attempt-level HANDOFF compaction
+
+- Each FIX writes a compact row to `HANDOFF_HISTORY.jsonl`.
+- `HANDOFF.json` carries `attempt`, `prior_attempts`, `prior_summary` (bounded by `fix_context.max_prior_attempts`).
+- FIX coder prompt surfaces `PRIOR_ATTEMPTS` so repeats are avoided without pasting old scenes.
+
 ### Plan fallbacks + prompt snippets
 
 - Partial `PLAN.json` → `plan_fallback.apply_plan_fallbacks` (title/beats/objectives defaults).

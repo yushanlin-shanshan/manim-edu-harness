@@ -238,7 +238,12 @@ class EpisodeLoop:
                 }
 
         final_review = reviewer_review(
-            kp, worker_result, candidate, self.config, self.client
+            kp,
+            worker_result,
+            candidate,
+            self.config,
+            self.client,
+            attempt=attempt,
         )
         verdict = str(final_review.get("verdict", "FIX")).upper()
         if verdict not in {"PASS", "FIX", "INCONCLUSIVE"}:
@@ -285,6 +290,7 @@ class EpisodeLoop:
                     else None
                 ),
                 config=self.config,
+                attempt=attempt,
             )
         append_progress(candidate, f"FIX attempt {attempt}: {sanitize_text(reason)}")
         return AttemptOutcome(

@@ -117,6 +117,9 @@
     "max_failed_check_chars": 400,
     "max_fix_guidance_chars": 1200,
     "scene_content_chars": 6000,
-    "scene_id_list_chars": 400
+    "scene_id_list_chars": 400,
+    "compact_on_attempt": true,
+    "max_prior_attempts": 3,
+    "max_attempt_summary_chars": 600
   }
 }

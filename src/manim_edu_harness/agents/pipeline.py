@@ -318,12 +318,30 @@ class AgentPipeline:
             for p in sorted((self.candidate / "scenes").glob("*.py"))
             if p.name != "__init__.py"
         ]
+        prior_block = ""
+        if handoff.get("prior_summary"):
+            prior_block = f"PRIOR_ATTEMPTS:\n{handoff.get('prior_summary')}\n\n"
+        handoff_view = {
+            k: handoff.get(k)
+            for k in (
+                "attempt",
+                "failed_checks",
+                "fix_guidance",
+                "focus_files",
+                "forbidden_rewrites",
+                "prior_attempts",
+                "open_checklist",
+            )
+            if k in handoff
+        }
         user = (
             "这是 FIX 轮（context reset）。根据 HANDOFF 重写完整 Manim 模块。"
             "只输出完整 Python 代码块；禁止把旧 scene 全文粘贴进思考。"
             "禁止 scipy；尽量不用 numpy；保证 ast.parse 通过。"
-            "禁止删除 load_and_play_narration / clear_board / safe_move。\n\n"
-            f"HANDOFF:\n{json.dumps(handoff, ensure_ascii=False, indent=2)}\n\n"
+            "禁止删除 load_and_play_narration / clear_board / safe_move。"
+            "若 PRIOR_ATTEMPTS 非空，优先解决仍重复出现的失败，勿重复已失败的写法。\n\n"
+            f"{prior_block}"
+            f"HANDOFF:\n{json.dumps(handoff_view, ensure_ascii=False, indent=2)}\n\n"
             f"FIX_GUIDANCE:\n{guidance}\n\n"
             f"OPEN_CHECKLIST (passes still false):\n"
             f"{json.dumps(open_items, ensure_ascii=False, indent=2)}\n\n"
