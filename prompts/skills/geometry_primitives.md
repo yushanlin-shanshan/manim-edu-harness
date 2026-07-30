@@ -76,10 +76,11 @@ def make_right_triangle(a: float = 3.0, b: float = 2.0) -> VGroup:
 - 推导公式用 `MathTex` + `TransformMatchingTex`；阶段结束 `clear_board()`。
 
 <!-- learned:forbid-set-color -->
-<!-- count=14 updated=2026-07-30T07:52Z -->
+<!-- count=15 updated=2026-07-30T08:58Z -->
 ## Learned from traces: never `.set_color(`
 
 - Hard-fail in rule_gate; auto-rewrite may map to `.set_fill(`.
 - Prefer constructor `color=` / `stroke_color=` / `fill_color=`.
 - For dimming: `obj.animate.set_fill(GREY).set_opacity(0.35)` — not `animate.set_color`.
 <!-- /learned:forbid-set-color -->
+
