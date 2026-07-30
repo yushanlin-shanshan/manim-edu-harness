@@ -7,6 +7,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
+from .context_budget import compact_error_line, compact_failed_checks, fix_context_settings
 from .fsutil import write_json
 
 
@@ -78,9 +79,11 @@ def write_handoff_from_review(
     final_review: dict[str, Any] | None = None,
     rule_gate: dict[str, Any] | None = None,
     verification: dict[str, Any] | None = None,
+    config: dict[str, Any] | None = None,
 ) -> Path:
     """Rule-based handoff when LLM does not emit structured fields."""
     candidate = Path(candidate)
+    settings = fix_context_settings(config)
     failed: list[str] = []
     if rule_gate and not rule_gate.get("ok"):
         failed.extend(str(x) for x in (rule_gate.get("failures") or []))
@@ -90,14 +93,26 @@ def write_handoff_from_review(
         reason = final_review.get("reason")
         if reason:
             failed.append(str(reason))
+        for key in ("blockers", "majors"):
+            for item in final_review.get(key) or []:
+                failed.append(str(item))
+    failed = compact_failed_checks(
+        failed or ["unspecified FIX"],
+        max_items=settings["max_failed_checks"],
+        max_item_chars=settings["max_failed_check_chars"],
+    )
     open_items: list[dict[str, Any]] = []
     checklist_path = candidate / "KP_CHECKLIST.json"
     if checklist_path.is_file():
         data = json.loads(checklist_path.read_text(encoding="utf-8"))
         open_items = [it for it in (data.get("items") or []) if not it.get("passes")]
+    guidance = str((final_review or {}).get("reason") or "")
+    guidance = compact_error_line(
+        guidance, max_chars=settings["max_fix_guidance_chars"]
+    )
     handoff = build_handoff(
-        failed_checks=failed or ["unspecified FIX"],
-        fix_guidance=str((final_review or {}).get("reason") or ""),
+        failed_checks=failed,
+        fix_guidance=guidance,
         open_checklist=open_items,
     )
     path = candidate / "HANDOFF.json"

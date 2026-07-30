@@ -68,6 +68,11 @@ Pattern catalog: [`trace_learn.py`](../src/manim_edu_harness/trace_learn.py) (`P
 }
 ```
 
+### VLM layout score + FIX context budget
+
+- Optional post-render scorer: `layout_scorer.maybe_score_candidate_layout` (ffmpeg frames → GLM-4V). Enable via `review_policy.vlm_layout.enabled`.
+- FIX budgets: `context_budget` compacts HANDOFF errors and tiers scene bodies in syntax-FIX prompts (`fix_context.*`).
+
 ## Skill registry (ClawHub-style)
 
 - Catalog: [`prompts/skills/registry.json`](../prompts/skills/registry.json)

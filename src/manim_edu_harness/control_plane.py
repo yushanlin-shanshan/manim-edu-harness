@@ -21,6 +21,7 @@ from .fsutil import write_json
 from .generation_retry import is_retryable_generation_error
 from .glm_client import GLMClient, MockGLMClient
 from .handoff import append_progress, mark_checklist_passed, write_handoff_from_review
+from .layout_scorer import maybe_score_candidate_layout
 from .renderer import renderer_render
 from .reviewer import reviewer_review
 from .rule_gate import pre_render_rule_gate
@@ -219,6 +220,23 @@ class EpisodeLoop:
                     (render_result.get("verification") or {}).get("ok", True)
                 )
 
+        with TraceSpan(candidate, "layout_score", attempt=attempt) as layout_span:
+            layout_result = maybe_score_candidate_layout(
+                candidate,
+                self.config,
+                self.client,
+                video_path=render_result.get("video") if isinstance(render_result, dict) else None,
+                dry_run=dry_run,
+            )
+            layout_span.ok = bool(layout_result.get("ok", True))
+            if isinstance(render_result, dict):
+                render_result["layout_score"] = {
+                    "skipped": layout_result.get("skipped"),
+                    "overall": (layout_result.get("score") or {}).get("overall"),
+                    "hard_fail": layout_result.get("hard_fail"),
+                    "note": layout_result.get("note"),
+                }
+
         final_review = reviewer_review(
             kp, worker_result, candidate, self.config, self.client
         )
@@ -266,6 +284,7 @@ class EpisodeLoop:
                     if isinstance(render_result, dict)
                     else None
                 ),
+                config=self.config,
             )
         append_progress(candidate, f"FIX attempt {attempt}: {sanitize_text(reason)}")
         return AttemptOutcome(

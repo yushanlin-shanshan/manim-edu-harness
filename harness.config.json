@@ -74,7 +74,15 @@
       "script_coherence",
       "visual_layout",
       "safety_content"
-    ]
+    ],
+    "vlm_layout": {
+      "enabled": false,
+      "model": "glm-4v-plus",
+      "max_frames": 3,
+      "min_overall": 6,
+      "hard_fail_below": 4,
+      "block_on_hard_fail": true
+    }
   },
   "batch": {
     "concurrency": 1,
@@ -97,6 +105,18 @@
     },
     "reviewer": {
       "temperature": 0.1
+    },
+    "layout_scorer": {
+      "model": "glm-4v-plus",
+      "temperature": 0.0,
+      "max_tokens": 2048
     }
+  },
+  "fix_context": {
+    "max_failed_checks": 8,
+    "max_failed_check_chars": 400,
+    "max_fix_guidance_chars": 1200,
+    "scene_content_chars": 6000,
+    "scene_id_list_chars": 400
   }
 }

@@ -41,7 +41,7 @@ class ZhipuClient:
 
     def chat(
         self,
-        messages: list[dict[str, str]],
+        messages: list[dict[str, Any]],
         *,
         temperature: float | None = None,
         max_tokens: int | None = None,
@@ -109,7 +109,7 @@ class ZhipuClient:
 
     def chat_json(
         self,
-        messages: list[dict[str, str]],
+        messages: list[dict[str, Any]],
         **kwargs: Any,
     ) -> dict[str, Any]:
         text = self.chat(messages, response_format_json=True, **kwargs)

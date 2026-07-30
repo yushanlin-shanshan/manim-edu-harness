@@ -29,6 +29,8 @@ We do **not** copy stage UI, whiteboard, OpenClaw skill, or PBL. We copy **contr
 | Trace / eval feedback → prompts | Recurring failures become permanent skill/gate changes | **Done:** `trace_learn.py` + `harness_control.py learn` |
 | JSON repair | LLM JSON rarely perfect | **Done:** `json_repair.loads_llm_json` wired in `ZhipuClient.chat_json` |
 | Per-stage model routing | Different models for outline vs content | **Done:** `roles` in `harness.config.json` + `role_routing.resolve_role_params` |
+| `eval/whiteboard-layout` VLM scorer | Visual teaching-quality rubric on screenshots | **Done:** `layout_scorer.py` + optional `review_policy.vlm_layout` |
+| `code-line-budget` summarizer | Tiered context: full → ids → omitted count | **Done:** `context_budget.py` for HANDOFF + syntax-FIX |
 
 ## Immediate upgrades (this change set)
 
@@ -43,6 +45,8 @@ We do **not** copy stage UI, whiteboard, OpenClaw skill, or PBL. We copy **contr
 9. **Trace-driven learning** — `trace_learn.py` + `harness_control.py learn` mines TRACE/HANDOFF/RULE_GATE → propose/apply skill patches.
 10. **JSON repair** — `json_repair.loads_llm_json` (fences / trailing commas / prose wrap).
 11. **Per-stage model routing** — `roles` config + `AgentPipeline` kwargs to `chat`/`chat_json`.
+12. **VLM layout score** — post-render frame sample + optional GLM-4V rubric (`LAYOUT_SCORE.json`).
+13. **FIX context budget** — compact failed_checks + tiered scene dump on syntax FIX.
 
 ## Explicit non-goals
 

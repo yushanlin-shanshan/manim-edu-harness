@@ -17,6 +17,7 @@ from ..handoff import (
 )
 from ..zhipu_client import ZhipuClient
 from . import load_prompt, role_system_prompt
+from ..context_budget import create_scene_budget, fix_context_settings, render_scenes_for_fix
 from ..role_routing import resolve_role_params
 
 
@@ -209,20 +210,25 @@ class AgentPipeline:
         return _write_scenes_from_coder(code_text, self.candidate)
 
     def _ensure_parseable(self, scenes: list[str], *, retries: int = 2) -> list[str]:
+        settings = fix_context_settings(self.config)
+        budget = create_scene_budget(
+            content_chars=settings["scene_content_chars"],
+            id_list_chars=settings["scene_id_list_chars"],
+        )
         for _ in range(retries):
             errs = _scene_syntax_errors(self.candidate)
             if not errs:
                 return scenes
-            blobs = []
-            for name in scenes:
-                path = self.candidate / "scenes" / name
-                if path.is_file():
-                    blobs.append(f"### {name}\n```python\n{path.read_text(encoding='utf-8')}\n```")
+            tiered = render_scenes_for_fix(
+                self.candidate, budget=budget, scene_names=scenes
+            )
             user = (
                 "上一次代码有 Python 语法错误，请输出完整可解析的替换模块（仅 python 代码块）。\n"
-                "不要使用 scipy；numpy 也尽量避免；只用 manim 标准对象。\n\n"
+                "不要使用 scipy；numpy 也尽量避免；只用 manim 标准对象。\n"
+                "若下方只有 ids/omitted，请从磁盘 scenes/ 逻辑重写完整模块，勿臆造已省略文件。\n\n"
                 f"SYNTAX_ERRORS:\n{json.dumps(errs, ensure_ascii=False)}\n\n"
-                + "\n\n".join(blobs)
+                f"SCENE_TIER:{json.dumps(tiered.get('tier_summary') or {}, ensure_ascii=False)}\n\n"
+                f"{tiered.get('text') or ''}"
             )
             scenes = self._coder_once(user)
         return scenes

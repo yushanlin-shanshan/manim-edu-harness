@@ -11,6 +11,7 @@ from pathlib import Path
 from typing import Any
 
 from .agents.pipeline import AgentPipeline
+from .layout_scorer import layout_issues_for_review
 from .fsutil import write_json
 from .glm_client import GLMClient
 from .handoff import append_progress, write_handoff_from_review
@@ -145,6 +146,7 @@ def reviewer_review(
             final_review=final,
             rule_gate=rule_gate,
             verification=verification,
+            config=config,
         )
         append_progress(candidate, f"Rule gate FIX: {reason}")
         return final
@@ -158,6 +160,21 @@ def reviewer_review(
     pipe = AgentPipeline(glm, candidate, request, config=config)
     with TraceSpan(candidate, "review"):
         audit = pipe.run_reviewer(plan, script, scenes, verification)
+
+    layout_path = candidate / "LAYOUT_SCORE.json"
+    layout = {}
+    if layout_path.is_file():
+        try:
+            layout = json.loads(layout_path.read_text(encoding="utf-8"))
+        except Exception:
+            layout = {}
+    layout_blockers, layout_majors = layout_issues_for_review(layout)
+    if layout_blockers or layout_majors:
+        audit = {
+            **audit,
+            "blockers": list(audit.get("blockers") or []) + layout_blockers,
+            "majors": list(audit.get("majors") or []) + layout_majors,
+        }
 
     verdict = adjudicate(verification, audit)
     reason_parts = []
@@ -177,6 +194,8 @@ def reviewer_review(
         "math_ok": audit.get("math_ok", True),
         "render_status": verification.get("render_status"),
         "rule_gate_ok": True,
+        "layout_overall": (layout.get("score") or {}).get("overall") if layout else None,
+        "layout_hard_fail": bool(layout.get("hard_fail")) if layout else False,
         "policy_version": config.get("review_protocol_version", 2),
     }
     write_json(candidate / "FINAL_REVIEW.json", final)
@@ -186,6 +205,7 @@ def reviewer_review(
             final_review=final,
             rule_gate=rule_gate,
             verification=verification,
+            config=config,
         )
         append_progress(candidate, f"Review FIX: {reason[:400]}")
     else:
