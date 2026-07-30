@@ -16,6 +16,7 @@ SRC = ROOT / "src"
 if str(SRC) not in sys.path:
     sys.path.insert(0, str(SRC))
 
+from manim_edu_harness.batch_quota import BatchQuota  # noqa: E402
 from manim_edu_harness.control_plane import (  # noqa: E402
     make_llm_client,
     maybe_synthesize_tts,
@@ -66,7 +67,13 @@ def run_single(
     )
 
 
-def write_reports(workspace: Path, results: list[dict[str, Any]], elapsed: float) -> None:
+def write_reports(
+    workspace: Path,
+    results: list[dict[str, Any]],
+    elapsed: float,
+    *,
+    quota: BatchQuota | None = None,
+) -> None:
     workspace.mkdir(parents=True, exist_ok=True)
     summary = {
         "total": len(results),
@@ -74,9 +81,12 @@ def write_reports(workspace: Path, results: list[dict[str, Any]], elapsed: float
         "fix_unresolved": sum(1 for r in results if r.get("status") == "FIX_UNRESOLVED"),
         "inconclusive": sum(1 for r in results if r.get("status") == "INCONCLUSIVE"),
         "error": sum(1 for r in results if r.get("status") == "ERROR"),
+        "quota_skipped": sum(1 for r in results if r.get("status") == "QUOTA_SKIPPED"),
         "elapsed_seconds": round(elapsed, 2),
         "results": results,
     }
+    if quota is not None:
+        summary["quota"] = quota.snapshot()
     blob = json.dumps(summary, ensure_ascii=False)
     summary = json.loads(sanitize_text(blob))
 
@@ -90,11 +100,18 @@ def write_reports(workspace: Path, results: list[dict[str, Any]], elapsed: float
         f"- fix_unresolved: **{summary['fix_unresolved']}**",
         f"- inconclusive: **{summary['inconclusive']}**",
         f"- error: **{summary['error']}**",
+        f"- quota_skipped: **{summary['quota_skipped']}**",
         f"- elapsed_seconds: **{summary['elapsed_seconds']}**",
-        "",
-        "| # | title | status | attempts | delivered |",
-        "|---|---|---|---|---|",
     ]
+    if quota is not None and quota.stop_reason:
+        lines.append(f"- quota_stop: **{quota.stop_reason}**")
+    lines.extend(
+        [
+            "",
+            "| # | title | status | attempts | delivered |",
+            "|---|---|---|---|---|",
+        ]
+    )
     for i, r in enumerate(results, 1):
         lines.append(
             "| {i} | {title} | {status} | {attempts} | {delivered} |".format(
@@ -129,6 +146,24 @@ def main(argv: list[str] | None = None) -> int:
         help="Use MockGLMClient; skip real API and Manim render",
     )
     parser.add_argument("--runs", type=Path, default=ROOT / "runs")
+    parser.add_argument(
+        "--max-errors",
+        type=int,
+        default=None,
+        help="stop batch after N ERROR/INCONCLUSIVE (overrides batch.quota)",
+    )
+    parser.add_argument(
+        "--max-elapsed",
+        type=float,
+        default=None,
+        help="stop batch after N seconds wall time (overrides batch.quota)",
+    )
+    parser.add_argument(
+        "--max-attempts-total",
+        type=int,
+        default=None,
+        help="stop batch after N total FIX attempts across episodes",
+    )
     args = parser.parse_args(argv)
 
     config = (
@@ -154,8 +189,29 @@ def main(argv: list[str] | None = None) -> int:
     results: list[dict[str, Any]] = []
     t0 = time.time()
     total = len(points)
+    quota = BatchQuota.from_config(
+        config,
+        max_errors=args.max_errors,
+        max_elapsed_seconds=args.max_elapsed,
+        max_attempts_total=args.max_attempts_total,
+    )
     for i, kp in enumerate(points, 1):
         title = kp.get("title") or kp.get("topic") or f"item-{i}"
+        if quota.should_stop() or quota.remaining() <= 0:
+            row = quota.mark_skipped(title=sanitize_text(str(title)), index=i, total=total)
+            results.append(row)
+            print(f"→ QUOTA_SKIPPED ({quota.stop_reason})")
+            # Mark remaining as skipped without running
+            for j in range(i + 1, total + 1):
+                rest = points[j - 1]
+                rest_title = rest.get("title") or rest.get("topic") or f"item-{j}"
+                results.append(
+                    quota.mark_skipped(
+                        title=sanitize_text(str(rest_title)), index=j, total=total
+                    )
+                )
+            break
+
         _progress_banner(i, total, str(title))
         try:
             row = run_single(
@@ -183,15 +239,23 @@ def main(argv: list[str] | None = None) -> int:
             }
             results.append(err)
             print(f"→ ERROR {err['reason']}")
+            row = err
+
+        quota.record(row, elapsed_seconds=time.time() - t0)
+        if quota.should_stop():
+            print(f"quota stop: {quota.stop_reason}")
 
     elapsed = time.time() - t0
-    write_reports(workspace, results, elapsed)
+    write_reports(workspace, results, elapsed, quota=quota)
     print("#" * 60)
     print(
         f"done: pass={sum(1 for r in results if r['status']=='PASS')} "
         f"error={sum(1 for r in results if r['status']=='ERROR')} "
+        f"quota_skipped={sum(1 for r in results if r['status']=='QUOTA_SKIPPED')} "
         f"elapsed={elapsed:.1f}s"
     )
+    if quota.stop_reason:
+        print(f"quota_stop: {quota.stop_reason}")
     print(f"report: {workspace / 'FINAL_REPORT.md'}")
     return 0 if all(r.get("status") != "ERROR" for r in results) else 1
 

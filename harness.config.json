@@ -86,7 +86,13 @@
   },
   "batch": {
     "concurrency": 1,
-    "topics_file": "topics/knowledge_points.json"
+    "topics_file": "topics/knowledge_points.json",
+    "quota": {
+      "max_episodes": null,
+      "max_attempts_total": null,
+      "max_errors": null,
+      "max_elapsed_seconds": null
+    }
   },
   "learning": {
     "min_count": 2,

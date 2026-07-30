@@ -102,7 +102,9 @@ def reviewer_review(
     require_color = bool(policy.get("require_color_system", True))
     # Auto-fix runs pre-render in batch_harness; post-render gate is check-only by default.
     pre_render = bool(policy.get("rule_gate_pre_render", True))
-    auto_fix = bool(policy.get("rule_gate_auto_fix", True)) and not pre_render
+    from .feature_flags import is_rule_gate_auto_fix_enabled
+
+    auto_fix = is_rule_gate_auto_fix_enabled(config) and not pre_render
     with TraceSpan(candidate, "rule_gate", require_color_system=require_color) as span:
         rule_gate = run_rule_gate(
             candidate,

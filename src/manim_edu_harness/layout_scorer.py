@@ -47,10 +47,12 @@ _DIMS = (
 
 
 def vlm_layout_settings(config: dict[str, Any] | None) -> dict[str, Any]:
+    from .feature_flags import is_vlm_layout_enabled
+
     policy = (config or {}).get("review_policy") or {}
     cfg = dict(policy.get("vlm_layout") or {})
     return {
-        "enabled": bool(cfg.get("enabled", False)),
+        "enabled": is_vlm_layout_enabled(config),
         "model": str(cfg.get("model") or "glm-4v-plus"),
         "max_frames": int(cfg.get("max_frames", 3)),
         "min_overall": float(cfg.get("min_overall", 6)),

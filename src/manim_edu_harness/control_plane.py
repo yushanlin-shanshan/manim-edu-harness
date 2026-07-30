@@ -112,8 +112,9 @@ class EpisodeLoop:
         )
 
     def tts_enabled(self) -> bool:
-        pipeline = self.config.get("pipeline") or {}
-        return bool(pipeline.get("tts_enabled", True))
+        from .feature_flags import is_tts_enabled
+
+        return is_tts_enabled(self.config)
 
     def run_attempt(
         self,
@@ -171,10 +172,12 @@ class EpisodeLoop:
             worker_result["tts"] = tts_result
             write_json(candidate / "WORKER_RESULT.json", worker_result)
 
+        from .feature_flags import is_rule_gate_auto_fix_enabled
+
         policy = self.config.get("review_policy") or {}
         require_color = bool(policy.get("require_color_system", True))
         do_pre = bool(policy.get("rule_gate_pre_render", True))
-        do_autofix = bool(policy.get("rule_gate_auto_fix", True))
+        do_autofix = is_rule_gate_auto_fix_enabled(self.config)
 
         if do_pre:
             with TraceSpan(candidate, "rule_gate_pre_render", attempt=attempt) as gate_span:

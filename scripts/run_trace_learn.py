@@ -53,7 +53,9 @@ def main(argv: list[str] | None = None) -> int:
     min_count = args.min_count
     if min_count is None:
         min_count = int(learning.get("min_count", 2))
-    apply = bool(args.apply or learning.get("auto_apply", False))
+    from manim_edu_harness.feature_flags import is_trace_learn_auto_apply_enabled
+
+    apply = bool(args.apply or is_trace_learn_auto_apply_enabled(config))
 
     report = run_learning(
         runs_dir=args.runs,

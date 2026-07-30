@@ -68,6 +68,11 @@ Pattern catalog: [`trace_learn.py`](../src/manim_edu_harness/trace_learn.py) (`P
 }
 ```
 
+### Feature flags + batch quota
+
+- Flags: [`feature_flags.py`](../src/manim_edu_harness/feature_flags.py) — env (`MANIM_HARNESS_*`) overrides config. Inspect: `python harness_control.py flags`.
+- Quota: [`batch_quota.py`](../src/manim_edu_harness/batch_quota.py) — `batch.quota` or CLI `--max-errors` / `--max-elapsed` / `--max-attempts-total`. Exhausted items → `QUOTA_SKIPPED` in `FINAL_REPORT`.
+
 ### Attempt-level HANDOFF compaction
 
 - Each FIX writes a compact row to `HANDOFF_HISTORY.jsonl`.

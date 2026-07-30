@@ -55,6 +55,7 @@ def main() -> int:
     p_agents = sub.add_parser("agents", help="show pipeline agent roles")
     p_skills = sub.add_parser("skills", help="list ClawHub-style registered skills")
     p_skills.add_argument("--all", action="store_true", help="include disabled")
+    sub.add_parser("flags", help="show resolved feature flags (env → config → default)")
 
     p_learn = sub.add_parser(
         "learn",
@@ -148,6 +149,14 @@ def main() -> int:
             print(f"{role}: {', '.join(ids)}")
         return 0
 
+    if args.cmd == "flags":
+        from manim_edu_harness.feature_flags import snapshot_flags
+        from manim_edu_harness.fsutil import load_config
+
+        flags = snapshot_flags(load_config(ROOT))
+        print(json.dumps(flags, ensure_ascii=False, indent=2))
+        return 0
+
     if args.cmd == "learn":
         from manim_edu_harness.fsutil import load_config
         from manim_edu_harness.trace_learn import run_learning
@@ -157,7 +166,9 @@ def main() -> int:
         min_count = args.min_count
         if min_count is None:
             min_count = int(learning.get("min_count", 2))
-        apply = bool(args.apply or learning.get("auto_apply", False))
+        from manim_edu_harness.feature_flags import is_trace_learn_auto_apply_enabled
+
+        apply = bool(args.apply or is_trace_learn_auto_apply_enabled(config))
         runs_dir = args.runs or (ROOT / str(config.get("runs_dir", "runs")))
         out_dir = args.out or (ROOT / "evals" / "learning")
         report = run_learning(

@@ -5,10 +5,12 @@ from __future__ import annotations
 import json
 import shutil
 import sys
+import time
 import traceback
 from pathlib import Path
 from typing import Any
 
+from .batch_quota import BatchQuota
 from .control_plane import EpisodeLoop, make_llm_client, run_batch_item
 from .fsutil import (
     copy_tree,
@@ -382,20 +384,40 @@ class Harness:
         self.runs_dir.mkdir(parents=True, exist_ok=True)
 
         results: list[dict[str, Any]] = []
-        for topic in topics:
+        quota = BatchQuota.from_config(self.config)
+        t0 = time.time()
+        total = len(topics)
+        for i, topic in enumerate(topics, 1):
             req = topic if isinstance(topic, dict) else {"topic": str(topic)}
             if "topic" not in req and "title" not in req:
                 raise ValueError(f"topic entry missing 'topic'/'title': {req}")
-            results.append(
-                run_batch_item(
-                    req,
-                    self.config,
-                    client,
-                    self.runs_dir,
-                    delivered,
-                    dry_run=dry_run,
+            title = str(req.get("title") or req.get("topic") or f"item-{i}")
+            if quota.should_stop() or quota.remaining() <= 0:
+                results.append(
+                    quota.mark_skipped(title=sanitize_text(title), index=i, total=total)
                 )
+                for j in range(i + 1, total + 1):
+                    rest = topics[j - 1]
+                    rest_req = rest if isinstance(rest, dict) else {"topic": str(rest)}
+                    rest_title = str(
+                        rest_req.get("title") or rest_req.get("topic") or f"item-{j}"
+                    )
+                    results.append(
+                        quota.mark_skipped(
+                            title=sanitize_text(rest_title), index=j, total=total
+                        )
+                    )
+                break
+            row = run_batch_item(
+                req,
+                self.config,
+                client,
+                self.runs_dir,
+                delivered,
+                dry_run=dry_run,
             )
+            results.append(row)
+            quota.record(row, elapsed_seconds=time.time() - t0)
         return results
 
 

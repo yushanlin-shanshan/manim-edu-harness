@@ -174,6 +174,8 @@ def render_scenes_for_fix(
 
 
 def fix_context_settings(config: dict[str, Any] | None) -> dict[str, Any]:
+    from .feature_flags import is_handoff_compact_enabled
+
     cfg = (config or {}).get("fix_context") or {}
     return {
         "max_failed_checks": int(cfg.get("max_failed_checks", 8)),
@@ -181,7 +183,7 @@ def fix_context_settings(config: dict[str, Any] | None) -> dict[str, Any]:
         "max_fix_guidance_chars": int(cfg.get("max_fix_guidance_chars", 1200)),
         "scene_content_chars": int(cfg.get("scene_content_chars", 6000)),
         "scene_id_list_chars": int(cfg.get("scene_id_list_chars", 400)),
-        "compact_on_attempt": bool(cfg.get("compact_on_attempt", True)),
+        "compact_on_attempt": is_handoff_compact_enabled(config),
         "max_prior_attempts": int(cfg.get("max_prior_attempts", 3)),
         "max_attempt_summary_chars": int(cfg.get("max_attempt_summary_chars", 600)),
     }

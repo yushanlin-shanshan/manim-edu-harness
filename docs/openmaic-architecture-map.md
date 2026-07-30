@@ -35,6 +35,8 @@ We do **not** copy stage UI, whiteboard, OpenClaw skill, or PBL. We copy **contr
 | `json-repair` reasoning strip | Drop `<think>` before JSON parse | **Done:** `strip_reasoning_prefix` in `json_repair` |
 | speech / json-output snippets | Shared TTS + JSON output rules | **Done:** `prompts/snippets/{speech-guidelines,json-output-rules}.md` |
 | `director-compaction` | Compact growing multi-turn context | **Done:** `handoff_compact.py` attempt history + prior_summary |
+| `feature-flags` | Env/config gates for experimental paths | **Done:** `feature_flags.py` + `harness_control.py flags` |
+| `runtime/quota` | Terminate when budget exhausted | **Done:** `batch_quota.py` wired in `batch_harness.py` |
 
 ## Immediate upgrades (this change set)
 
@@ -54,6 +56,8 @@ We do **not** copy stage UI, whiteboard, OpenClaw skill, or PBL. We copy **contr
 14. **Plan fallbacks** — fill missing PLAN fields before writer/coder.
 15. **Reasoning-prefix JSON repair** + speech/json prompt snippets.
 16. **Attempt-level HANDOFF compaction** — `HANDOFF_HISTORY.jsonl` + bounded `prior_attempts`.
+17. **Feature flags** — env → config → default (`MANIM_HARNESS_*`).
+18. **Batch quota** — max episodes / attempts / errors / elapsed; `QUOTA_SKIPPED`.
 
 ## Explicit non-goals
 
