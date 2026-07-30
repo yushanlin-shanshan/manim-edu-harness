@@ -6,15 +6,15 @@ One-prompt / batch **Multi-Agent Harness** that produces **STEM short-drama expl
 
 ```text
 topic / batch queue
-  → Planner (story beats + learning objectives)
-  → Writer (short-drama script)
-  → Coder (Manim scenes in candidate/)
-  → Harness verification (AST + optional manim render)
-  → Reviewer (math + pedagogy + renderability)
-  → PASS: promote candidate → workspace/
-     FIX: coder repair (bounded rounds)
+  → EpisodeLoop (shared control plane)
+      Planner → Writer → Coder
+      → TTS → RuleGate → Render → Reviewer
+  → PASS: promote (workspace/ or delivered/)
+     FIX: HANDOFF + bounded coder repair
      INCONCLUSIVE: pause until environment recovers
 ```
+
+Architecture details: [docs/harness-architecture.md](docs/harness-architecture.md) · OpenMAIC pattern map: [docs/openmaic-architecture-map.md](docs/openmaic-architecture-map.md).
 
 ## Quick start
 
@@ -73,6 +73,11 @@ Without `manim` on `PATH`, verification still enforces structure + AST; missing 
 | `python harness_control.py stop` | Pause; keep candidate |
 | `python harness_control.py continue` | Resume INCONCLUSIVE / paused review |
 | `python harness_control.py agents` | Show pipeline roles |
+| `python harness_control.py skills` | List ClawHub-style skill registry |
+| `python harness_control.py flags` | Resolved feature flags (env → config) |
+| `python harness_control.py learn [--apply]` | Mine TRACE/HANDOFF → propose/apply skill patches |
+
+Batch quotas: `--max-errors` / `--max-elapsed` / `--max-attempts-total` on `batch_harness.py`.
 
 Only one unfinished run is accepted at a time (same discipline as Adversarial_harness).
 
@@ -80,12 +85,14 @@ Only one unfinished run is accepted at a time (same discipline as Adversarial_ha
 
 ```text
 harness_control.py      # operator CLI
-harness.config.json     # models, limits, verification policy
-prompts/                # planner / writer / coder / reviewer
-topics/seed_stem.json   # batch STEM topics
-src/manim_edu_harness/  # harness + Zhipu client + verify
+batch_harness.py        # batch adapter over EpisodeLoop
+harness.config.json     # models, roles, retry, quota, review policy
+prompts/                # core + role prompts + skills/ + snippets/
+docs/                   # architecture + OpenMAIC map
+topics/                 # batch STEM topics
+src/manim_edu_harness/  # control plane, gates, clients, learning
 workspace/              # formal promoted delivery
-runs/                   # per-run candidate, audits, reports
+runs/                   # per-run candidate, audits, TRACE
 ```
 
 ## Security

@@ -6,15 +6,15 @@
 
 ```text
 主题 / 批量队列
-  → Planner（分镜与学习目标）
-  → Writer（短剧剧本）
-  → Coder（在 candidate/ 写 Manim）
-  → Harness 验收（AST + 可选 manim 渲染）
-  → Reviewer（数学正确性 / 教法 / 可渲染性）
-  → PASS：提升到 workspace/
-     FIX：有限轮修复
+  → EpisodeLoop（统一控制面）
+      Planner → Writer → Coder
+      → TTS → RuleGate → Render → Reviewer
+  → PASS：提升到 workspace/ 或 delivered/
+     FIX：HANDOFF + 有限轮修复
      INCONCLUSIVE：暂停等环境
 ```
+
+架构说明：[docs/harness-architecture.md](docs/harness-architecture.md) · OpenMAIC 对照：[docs/openmaic-architecture-map.md](docs/openmaic-architecture-map.md)。
 
 ## 快速开始
 
@@ -38,6 +38,11 @@ python harness_control.py status
 | `batch` | 按 `topics/seed_stem.json` 批量 |
 | `status` / `stop` / `continue` | 状态、暂停、恢复 |
 | `agents` | 查看角色管线 |
+| `skills` | 列出 skill registry |
+| `flags` | 查看功能开关（env → config） |
+| `learn [--apply]` | 从 TRACE/HANDOFF 提炼 skill 补丁 |
+
+批量配额：`batch_harness.py` 的 `--max-errors` / `--max-elapsed` / `--max-attempts-total`。
 
 同一时间只允许一个未结束 run。
 
