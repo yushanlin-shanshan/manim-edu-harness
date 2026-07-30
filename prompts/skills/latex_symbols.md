@@ -52,13 +52,14 @@ Text("∇f(x) = ...")  # BAD for formulas / TransformMatchingTex
 - 必须实现 `conclusion_phase()`（学习率过大/过小对比）。
 
 <!-- learned:axes-i2gp-not-get-point -->
-<!-- count=4 updated=2026-07-30T09:54Z -->
+<!-- count=11 updated=2026-07-30T12:15Z -->
 ## Learned from traces: graph / axes point lookup
 
 - Forbidden: `graph.get_point(...)`, `axes.x_axis.get_point_from_proportion(...)`.
 - Use `axes.i2gp(x, graph)` or `axes.c2p(x, y)` for coordinates.
 - Interval markers: `Dot(axes.c2p(a, 0))` / `Line(axes.c2p(a,0), axes.c2p(b,0))`.
 <!-- /learned:axes-i2gp-not-get-point -->
+
 
 <!-- learned:latex-raw-strings -->
 <!-- count=1 updated=2026-07-30T10:20Z -->

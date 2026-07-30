@@ -14,9 +14,9 @@
         "样本空间缩减到 B"
       ],
       "must_teach": [
-        "MathTex 形式化；可用韦恩示意；# [KP-k]",
-        "COLOR_SYSTEM；clear_board；safe_move；load_and_play_narration",
-        "原子化 play≤2"
+        "MathTex 写定义与乘法公式；# [KP-k]",
+        "韦恩仅用两个重叠 Circle + 小圆示意交集；禁止 .intersection/.union；禁止 Brace(get_part_by_tex)",
+        "COLOR_SYSTEM；clear_board；safe_move；load_and_play_narration；原子化 play≤2"
       ]
     }
   ]

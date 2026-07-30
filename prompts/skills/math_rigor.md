@@ -19,10 +19,11 @@
 - 无 key_points 时对 must_teach / 可检验命题同样标注。
 
 <!-- learned:kp-anchors-required -->
-<!-- count=3 updated=2026-07-30T08:58Z -->
+<!-- count=5 updated=2026-07-30T12:15Z -->
 ## Learned from traces: KP anchors
 
 - Place `# [KP-1]` / `# [KP-2]` (etc.) in `construct` near teaching beats.
 - Checklist items map to these anchors; do not omit them.
 <!-- /learned:kp-anchors-required -->
+
 

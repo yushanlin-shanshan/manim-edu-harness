@@ -170,6 +170,14 @@ def check_scene_rules(source: str, *, require_color_system: bool = True) -> list
         failures.append("use axes.i2gp/c2p instead of graph.get_point(...)")
     if re.search(r"\.set_color\s*\(", source):
         failures.append("forbid .set_color(); pass color=/stroke_color=/fill_color= at construction (or use set_stroke/set_fill)")
+    if re.search(r"Brace\s*\([\s\S]{0,120}?get_part_by_tex", source):
+        failures.append(
+            "forbid Brace(...get_part_by_tex(...)); get_part_by_tex often returns None — Brace(whole_mathtex) or skip braces"
+        )
+    if re.search(r"\.(?:intersection|union|difference)\s*\(", source):
+        failures.append(
+            "forbid .intersection/.union/.difference on mobjects; for Venn use overlapping Circles + fill, not boolean ops"
+        )
     if re.search(r"(UP|DOWN)\s*\*\s*[4-9]", source) or re.search(
         r"(LEFT|RIGHT)\s*\*\s*[7-9]", source
     ):
@@ -287,6 +295,29 @@ def _fix_color_system_typos(source: str) -> tuple[str, bool]:
     new, n = re.subn(r"\bCOLOR_SIZE\b|\bCOLOR_STYLE\b", "COLOR_SYSTEM", source)
     return new, n > 0
 
+
+def _rewrite_brace_get_part_by_tex(source: str) -> tuple[str, bool]:
+    """Brace(mobj.get_part_by_tex(...), dir) → Brace(mobj, dir) when None would crash."""
+    new, n = re.subn(
+        r"Brace\s*\(\s*([A-Za-z_][\w\.]*)\s*\.get_part_by_tex\s*\(\s*(?:\"[^\"]*\"|'[^']*'|[^)]*)\s*\)\s*,",
+        r"Brace(\1,",
+        source,
+    )
+    return new, n > 0
+
+
+def _strip_mobject_boolean_ops(source: str) -> tuple[str, bool]:
+    """Replace `x = foo.intersection(bar)`-style assignments with a Circle placeholder."""
+    if not re.search(r"\.(?:intersection|union|difference)\s*\(", source):
+        return source, False
+    new, n = re.subn(
+        r"(\w+)\s*=\s*[^\n#]*\.(?:intersection|union|difference)\s*\([^)]*\)",
+        r'\1 = Circle(radius=0.8, color=COLOR_SYSTEM.get("accent", BLUE), fill_opacity=0.4)',
+        source,
+    )
+    return new, n > 0
+
+
 def auto_fix_scene_source(source: str, *, require_color_system: bool = True) -> tuple[str, list[str]]:
     """Inject missing iron-law helpers. Returns (new_source, fix_labels)."""
     fixes: list[str] = []
@@ -310,6 +341,14 @@ def auto_fix_scene_source(source: str, *, require_color_system: bool = True) -> 
     if typo_fixed:
         fixes.append("COLOR_SYSTEM typo")
         print("[Rule Gate] Auto-fixing COLOR_SIZE/COLOR_STYLE → COLOR_SYSTEM...")
+    out, brace_fixed = _rewrite_brace_get_part_by_tex(out)
+    if brace_fixed:
+        fixes.append("Brace(get_part_by_tex)→Brace(mobject)")
+        print("[Rule Gate] Auto-fixing Brace(...get_part_by_tex(...)) → Brace(mobject)...")
+    out, bool_fixed = _strip_mobject_boolean_ops(out)
+    if bool_fixed:
+        fixes.append("mobject boolean op → Circle")
+        print("[Rule Gate] Auto-fixing .intersection/.union/.difference → Circle placeholder...")
     out, cb_fixed = _rewrite_clear_board_if_unsafe(out)
     if cb_fixed:
         fixes.append("clear_board")

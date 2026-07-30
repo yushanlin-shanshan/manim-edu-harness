@@ -1,82 +1,6 @@
 {
   "knowledge_points": [
     {
-      "id": "kp-matrix-multiply",
-      "title": "矩阵乘法：行乘列",
-      "topic": "矩阵乘法：A(m×n)·B(n×p)=C(m×p)，c_ij=行·列",
-      "major": "数学 / 线性代数",
-      "audience": "大学一年级",
-      "language": "zh-CN",
-      "key_points": [
-        "相容条件：A 的列数 = B 的行数",
-        "定义：c_ij = Σ_k a_ik b_kj",
-        "一般不可交换：AB≠BA",
-        "几何直觉：线性变换的复合"
-      ],
-      "must_teach": [
-        "MathTex / Matrix 形式化；# [KP-k]",
-        "COLOR_SYSTEM；clear_board；safe_move；load_and_play_narration",
-        "高亮正在相乘的行与列；原子化 play≤2"
-      ]
-    },
-    {
-      "id": "kp-eigen-intuition",
-      "title": "特征值与特征向量直觉",
-      "topic": "Av=λv：特征向量方向不变，只被伸缩",
-      "major": "数学 / 线性代数",
-      "audience": "大学",
-      "language": "zh-CN",
-      "key_points": [
-        "定义：Av=λv，v≠0",
-        "λ 为特征值，v 为特征向量",
-        "几何：沿特征方向只缩放不旋转",
-        "特征方程：det(A-λI)=0"
-      ],
-      "must_teach": [
-        "MathTex 形式化；# [KP-k]",
-        "COLOR_SYSTEM；clear_board；safe_move；load_and_play_narration",
-        "可用箭头示意变换前后方向；原子化 play≤2"
-      ]
-    },
-    {
-      "id": "kp-vector-projection",
-      "title": "向量投影：proj_b a",
-      "topic": "向量 a 在 b 方向上的投影公式与几何意义",
-      "major": "数学 / 线性代数",
-      "audience": "大学一年级",
-      "language": "zh-CN",
-      "key_points": [
-        "投影向量：proj_b a = ((a·b)/(b·b)) b",
-        "条件：b≠0",
-        "标量投影：|a|cosθ = (a·b)/|b|",
-        "正交分解：a = proj + 垂直分量"
-      ],
-      "must_teach": [
-        "MathTex 形式化；# [KP-k]",
-        "COLOR_SYSTEM；clear_board；safe_move；load_and_play_narration",
-        "用 Arrow/Line 画投影；原子化 play≤2"
-      ]
-    },
-    {
-      "id": "kp-bayes",
-      "title": "贝叶斯定理：先验与后验",
-      "topic": "贝叶斯定理：P(H|E)=P(E|H)P(H)/P(E)",
-      "major": "数学 / 概率论",
-      "audience": "大学低年级",
-      "language": "zh-CN",
-      "key_points": [
-        "先验 P(H)、似然 P(E|H)、后验 P(H|E)",
-        "公式：P(H|E)=P(E|H)P(H)/P(E)",
-        "全概率展开分母：P(E)=Σ P(E|H_i)P(H_i)",
-        "直觉：证据更新信念"
-      ],
-      "must_teach": [
-        "MathTex 形式化；# [KP-k]",
-        "COLOR_SYSTEM；clear_board；safe_move；load_and_play_narration",
-        "TransformMatchingTex；原子化 play≤2"
-      ]
-    },
-    {
       "id": "kp-conditional-prob",
       "title": "条件概率：P(A|B)",
       "topic": "条件概率定义与乘法公式",
@@ -90,47 +14,9 @@
         "样本空间缩减到 B"
       ],
       "must_teach": [
-        "MathTex 形式化；可用韦恩示意；# [KP-k]",
-        "COLOR_SYSTEM；clear_board；safe_move；load_and_play_narration",
-        "原子化 play≤2"
-      ]
-    },
-    {
-      "id": "kp-clt",
-      "title": "中心极限定理直觉",
-      "topic": "中心极限定理：样本均值趋近正态分布",
-      "major": "数学 / 概率统计",
-      "audience": "大学",
-      "language": "zh-CN",
-      "key_points": [
-        "独立同分布 X_i，均值 μ，方差 σ^2>0",
-        "样本均值 X̄_n 标准化后 → N(0,1)",
-        "n 足够大时 X̄ 近似正态",
-        "与原分布形状弱相关（直观层面）"
-      ],
-      "must_teach": [
-        "MathTex 形式化；# [KP-k]",
-        "COLOR_SYSTEM；clear_board；safe_move；load_and_play_narration",
-        "可用直方图→钟形示意；原子化 play≤2"
-      ]
-    },
-    {
-      "id": "kp-gradient-descent",
-      "title": "梯度下降直觉：沿负梯度下山",
-      "topic": "梯度下降：x ← x - η ∇L(x)",
-      "major": "数学 / 优化入门",
-      "audience": "大学",
-      "language": "zh-CN",
-      "key_points": [
-        "目标：最小化可微损失 L(x)",
-        "梯度 ∇L 指向上升最快方向",
-        "更新：x_{t+1}=x_t - η ∇L(x_t)",
-        "学习率 η 过大震荡、过小收敛慢"
-      ],
-      "must_teach": [
-        "MathTex 形式化；# [KP-k]",
-        "COLOR_SYSTEM；clear_board；safe_move；load_and_play_narration",
-        "可用曲线+箭头示意一步下山；原子化 play≤2"
+        "MathTex 写定义与乘法公式；# [KP-k]",
+        "韦恩仅用两个重叠 Circle + 小圆示意交集；禁止 .intersection/.union；禁止 Brace(get_part_by_tex)",
+        "COLOR_SYSTEM；clear_board；safe_move；load_and_play_narration；原子化 play≤2"
       ]
     }
   ]

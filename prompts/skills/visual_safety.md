@@ -28,7 +28,7 @@ def clear_board(self):
 禁止在 `clear_board` 里调用 `self.renderer.update_frame(...)`（缺参会直接炸渲染）。
 
 <!-- learned:rule-gate-pre-render-skip -->
-<!-- count=4 updated=2026-07-30T08:58Z -->
+<!-- count=4 updated=2026-07-30T12:15Z -->
 ## Learned from traces: pre-render gate
 
 - Treat rule_gate iron laws as hard prerequisites before Manim render.
@@ -36,8 +36,9 @@ def clear_board(self):
 <!-- /learned:rule-gate-pre-render-skip -->
 
 
+
 <!-- learned:color-system-nameerror -->
-<!-- count=4 updated=2026-07-30T08:58Z -->
+<!-- count=5 updated=2026-07-30T12:15Z -->
 ## Learned from traces: COLOR_SYSTEM
 
 - Always define module-level `COLOR_SYSTEM = {...}` **before** `class EpisodeScene`.
@@ -45,14 +46,16 @@ def clear_board(self):
 - Rule gate auto-injects COLOR_SYSTEM when missing; do not rely on injection alone—emit it in the first coder draft.
 <!-- /learned:color-system-nameerror -->
 
+
 <!-- learned:manimcolor-types -->
-<!-- count=2 updated=2026-07-30T09:54Z -->
+<!-- count=1 updated=2026-07-30T12:15Z -->
 ## Learned from traces: ManimColor types
 
 - Colors must be Manim constants (`BLUE`, `TEAL`, `ORANGE`, …) or `COLOR_SYSTEM[...]` values.
 - Forbidden: arbitrary hex strings / RGB tuples that are not Manim-accepted types when passed where ManimColor is required.
 - Prefer `color=COLOR_SYSTEM["primary"]` / constructor kwargs; never invent `ManimColor([...])` with floats.
 <!-- /learned:manimcolor-types -->
+
 
 <!-- learned:color-system-typo -->
 <!-- count=1 updated=2026-07-30T10:44Z -->

@@ -151,6 +151,36 @@ class EpisodeScene(Scene):
         self.assertIn(".set_fill(", fixed)
         self.assertEqual(check_scene_rules(fixed, require_color_system=True), [])
 
+    def test_brace_get_part_by_tex_forbidden_and_autofix(self) -> None:
+        bad = (
+            MINIMAL_OK
+            + "\n    def foo(self):\n"
+            + '        t = MathTex(r"P(B)")\n'
+            + '        b = Brace(t.get_part_by_tex("P(B)"), DOWN)\n'
+        )
+        fails = check_scene_rules(bad)
+        self.assertTrue(any("get_part_by_tex" in f for f in fails))
+        fixed, labels = auto_fix_scene_source(bad, require_color_system=True)
+        self.assertIn("Brace(get_part_by_tex)→Brace(mobject)", labels)
+        self.assertIn("Brace(t,", fixed)
+        self.assertNotIn("Brace(t.get_part_by_tex", fixed)
+        self.assertEqual(check_scene_rules(fixed, require_color_system=True), [])
+
+    def test_intersection_forbidden_and_autofix(self) -> None:
+        bad = (
+            MINIMAL_OK
+            + "\n    def foo(self):\n"
+            + "        a = Circle()\n"
+            + "        b = Circle()\n"
+            + "        inter = a.intersection(b)\n"
+        )
+        fails = check_scene_rules(bad)
+        self.assertTrue(any("intersection" in f for f in fails))
+        fixed, labels = auto_fix_scene_source(bad, require_color_system=True)
+        self.assertIn("mobject boolean op → Circle", labels)
+        self.assertNotIn(".intersection(", fixed)
+        self.assertEqual(check_scene_rules(fixed, require_color_system=True), [])
+
     def test_run_rule_gate_auto_fix_writes(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)

@@ -76,13 +76,14 @@ def make_right_triangle(a: float = 3.0, b: float = 2.0) -> VGroup:
 - 推导公式用 `MathTex` + `TransformMatchingTex`；阶段结束 `clear_board()`。
 
 <!-- learned:forbid-set-color -->
-<!-- count=15 updated=2026-07-30T08:58Z -->
+<!-- count=21 updated=2026-07-30T12:15Z -->
 ## Learned from traces: never `.set_color(`
 
 - Hard-fail in rule_gate; auto-rewrite may map to `.set_fill(`.
 - Prefer constructor `color=` / `stroke_color=` / `fill_color=`.
 - For dimming: `obj.animate.set_fill(GREY).set_opacity(0.35)` — not `animate.set_color`.
 <!-- /learned:forbid-set-color -->
+
 
 <!-- learned:manim-star-import-only -->
 <!-- count=1 updated=2026-07-30T10:44Z -->
@@ -92,4 +93,23 @@ def make_right_triangle(a: float = 3.0, b: float = 2.0) -> VGroup:
 - `Line` / `Dot` / `Arrow` come from `from manim import *` already.
 - Deep imports break across Manim versions (`Line` vs `Line3D`).
 <!-- /learned:manim-star-import-only -->
+
+<!-- learned:brace-no-get-part-by-tex -->
+<!-- count=6 updated=2026-07-30T12:15Z -->
+## Learned from traces: Brace must wrap a real mobject
+
+- Forbidden: `Brace(tex.get_part_by_tex("..."), DOWN)` — `get_part_by_tex` often returns `None` → `AttributeError: rotate`.
+- Prefer `Brace(whole_mathtex, DOWN)` or skip braces; label with `Text(...).next_to(formula, DOWN)`.
+- Do not chain Brace on optional submobject lookups.
+<!-- /learned:brace-no-get-part-by-tex -->
+
+
+<!-- learned:no-mobject-boolean-ops -->
+<!-- count=1 updated=2026-07-30T12:15Z -->
+## Learned from traces: no VGroup/Circle boolean ops
+
+- Forbidden: `circle_a.intersection(circle_b)` / `.union` / `.difference`.
+- Venn: two overlapping `Circle(..., fill_opacity=0.3)` + a smaller filled circle for A∩B; never boolean geometry.
+<!-- /learned:no-mobject-boolean-ops -->
+
 

@@ -175,6 +175,44 @@ PATTERNS: tuple[LearnedPattern, ...] = (
         ),
         roles_hint=("coder",),
     ),
+    LearnedPattern(
+        id="brace-no-get-part-by-tex",
+        skill_id="geometry_primitives",
+        description="Brace(get_part_by_tex) crashes when lookup returns None",
+        matchers=_rx(
+            r"Brace\([^)]*get_part_by_tex",
+            r"forbid Brace\(\.\.\.get_part_by_tex",
+            r"AttributeError:.*NoneType.*rotate",
+            r"mobject\.rotate\(-angle",
+        ),
+        patch_body=(
+            "## Learned from traces: Brace must wrap a real mobject\n\n"
+            "- Forbidden: `Brace(tex.get_part_by_tex(\"...\"), DOWN)` — "
+            "`get_part_by_tex` often returns `None` → `AttributeError: rotate`.\n"
+            "- Prefer `Brace(whole_mathtex, DOWN)` or skip braces; "
+            "label with `Text(...).next_to(formula, DOWN)`.\n"
+            "- Do not chain Brace on optional submobject lookups.\n"
+        ),
+        roles_hint=("coder",),
+    ),
+    LearnedPattern(
+        id="no-mobject-boolean-ops",
+        skill_id="geometry_primitives",
+        description="VGroup/Circle .intersection/.union/.difference are unreliable",
+        matchers=_rx(
+            r"has no attribute ['\"]intersection['\"]",
+            r"forbid \.intersection",
+            r"\.intersection\s*\(",
+            r"\.union\s*\(|\.difference\s*\(",
+        ),
+        patch_body=(
+            "## Learned from traces: no VGroup/Circle boolean ops\n\n"
+            "- Forbidden: `circle_a.intersection(circle_b)` / `.union` / `.difference`.\n"
+            "- Venn: two overlapping `Circle(..., fill_opacity=0.3)` + a smaller filled "
+            "circle for A∩B; never boolean geometry.\n"
+        ),
+        roles_hint=("coder",),
+    ),
 )
 
 
