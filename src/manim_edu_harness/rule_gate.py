@@ -170,9 +170,13 @@ def check_scene_rules(source: str, *, require_color_system: bool = True) -> list
         failures.append("use axes.i2gp/c2p instead of graph.get_point(...)")
     if re.search(r"\.set_color\s*\(", source):
         failures.append("forbid .set_color(); pass color=/stroke_color=/fill_color= at construction (or use set_stroke/set_fill)")
-    if re.search(r"Brace\s*\([\s\S]{0,120}?get_part_by_tex", source):
+    if re.search(
+        r"(?:Brace|SurroundingRectangle|Underline)\s*\([\s\S]{0,160}?get_part_by_tex",
+        source,
+    ):
         failures.append(
-            "forbid Brace(...get_part_by_tex(...)); get_part_by_tex often returns None — Brace(whole_mathtex) or skip braces"
+            "forbid Brace/SurroundingRectangle/Underline(...get_part_by_tex(...)); "
+            "get_part_by_tex often returns None — wrap the whole MathTex instead"
         )
     if re.search(r"\.(?:intersection|union|difference)\s*\(", source):
         failures.append(
@@ -297,10 +301,10 @@ def _fix_color_system_typos(source: str) -> tuple[str, bool]:
 
 
 def _rewrite_brace_get_part_by_tex(source: str) -> tuple[str, bool]:
-    """Brace(mobj.get_part_by_tex(...), dir) → Brace(mobj, dir) when None would crash."""
+    """Wrap(mobj.get_part_by_tex(...), ...) → Wrap(mobj, ...) when None would crash."""
     new, n = re.subn(
-        r"Brace\s*\(\s*([A-Za-z_][\w\.]*)\s*\.get_part_by_tex\s*\(\s*(?:\"[^\"]*\"|'[^']*'|[^)]*)\s*\)\s*,",
-        r"Brace(\1,",
+        r"(Brace|SurroundingRectangle|Underline)\s*\(\s*([A-Za-z_][\w\.]*)\s*\.get_part_by_tex\s*\(\s*(?:\"[^\"]*\"|'[^']*'|[^)]*)\s*\)\s*,",
+        r"\1(\2,",
         source,
     )
     return new, n > 0
@@ -343,8 +347,10 @@ def auto_fix_scene_source(source: str, *, require_color_system: bool = True) -> 
         print("[Rule Gate] Auto-fixing COLOR_SIZE/COLOR_STYLE → COLOR_SYSTEM...")
     out, brace_fixed = _rewrite_brace_get_part_by_tex(out)
     if brace_fixed:
-        fixes.append("Brace(get_part_by_tex)→Brace(mobject)")
-        print("[Rule Gate] Auto-fixing Brace(...get_part_by_tex(...)) → Brace(mobject)...")
+        fixes.append("wrap(get_part_by_tex)→wrap(mobject)")
+        print(
+            "[Rule Gate] Auto-fixing Brace/SurroundingRectangle/Underline(...get_part_by_tex(...)) → wrap(mobject)..."
+        )
     out, bool_fixed = _strip_mobject_boolean_ops(out)
     if bool_fixed:
         fixes.append("mobject boolean op → Circle")

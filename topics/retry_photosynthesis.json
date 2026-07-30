@@ -1,0 +1,23 @@
+{
+  "knowledge_points": [
+    {
+      "id": "kp-photosynthesis",
+      "title": "光合作用：光反应与暗反应分工",
+      "topic": "光合作用两阶段：光反应产 ATP/NADPH，暗反应固碳",
+      "major": "生物",
+      "audience": "高中",
+      "language": "zh-CN",
+      "key_points": [
+        "总反应：6CO2+6H2O → C6H12O6+6O2（需光）",
+        "光反应：光能→ATP、NADPH，释放 O2",
+        "暗反应（卡尔文）：用 ATP/NADPH 固定 CO2 成糖",
+        "两阶段在叶绿体不同部位协同"
+      ],
+      "must_teach": [
+        "MathTex / Text 关键式；# [KP-k]",
+        "禁止 SurroundingRectangle/Brace(get_part_by_tex)；高亮整式或另写 Text 标签",
+        "COLOR_SYSTEM；clear_board；safe_move；load_and_play_narration；原子化 play≤2"
+      ]
+    }
+  ]
+}

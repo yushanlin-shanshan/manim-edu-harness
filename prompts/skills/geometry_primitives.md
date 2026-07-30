@@ -96,11 +96,11 @@ def make_right_triangle(a: float = 3.0, b: float = 2.0) -> VGroup:
 
 <!-- learned:brace-no-get-part-by-tex -->
 <!-- count=6 updated=2026-07-30T12:15Z -->
-## Learned from traces: Brace must wrap a real mobject
+## Learned from traces: Brace / SurroundingRectangle must wrap a real mobject
 
-- Forbidden: `Brace(tex.get_part_by_tex("..."), DOWN)` — `get_part_by_tex` often returns `None` → `AttributeError: rotate`.
-- Prefer `Brace(whole_mathtex, DOWN)` or skip braces; label with `Text(...).next_to(formula, DOWN)`.
-- Do not chain Brace on optional submobject lookups.
+- Forbidden: `Brace(tex.get_part_by_tex("..."), DOWN)` or `SurroundingRectangle(tex.get_part_by_tex("..."), ...)`.
+- `get_part_by_tex` often returns `None` → TypeError / AttributeError.
+- Prefer wrapping the **whole** MathTex, or highlight with a separate Text label; never chain on optional submobject lookups.
 <!-- /learned:brace-no-get-part-by-tex -->
 
 

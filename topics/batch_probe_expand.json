@@ -1,0 +1,81 @@
+{
+  "description": "Post-wide expansion: chemistry, calculus, physics, biology — fresh KPs",
+  "knowledge_points": [
+    {
+      "id": "kp-activation",
+      "title": "化学反应速率与活化能",
+      "topic": "化学反应速率与活化能（定性）",
+      "major": "化学 / 反应动力学入门",
+      "audience": "高中",
+      "language": "zh-CN",
+      "key_points": [
+        "活化能 Ea：反应物到过渡态所需最低能量",
+        "有效碰撞：取向合适且能量 ≥ Ea",
+        "Ea 越低，同温下反应速率通常越快",
+        "催化剂提供更低 Ea 路径（不改变 ΔH）"
+      ],
+      "must_teach": [
+        "MathTex 写 Ea / 能量剖面示意；# [KP-k]",
+        "COLOR_SYSTEM；clear_board；safe_move；load_and_play_narration",
+        "禁止 Brace(get_part_by_tex)；原子化 play≤2"
+      ]
+    },
+    {
+      "id": "kp-taylor-linear",
+      "title": "泰勒展开直觉：局部线性近似",
+      "topic": "f(x)≈f(a)+f'(a)(x-a) 一阶泰勒",
+      "major": "数学 / 微积分",
+      "audience": "大学一年级",
+      "language": "zh-CN",
+      "key_points": [
+        "在 x=a 附近用切线近似曲线",
+        "一阶：f(x)≈f(a)+f'(a)(x-a)",
+        "误差随 |x-a| 增大而增大",
+        "更高阶加入 f''(a)/2!(x-a)^2 等项"
+      ],
+      "must_teach": [
+        "MathTex 形式化；可用曲线+切线示意；# [KP-k]",
+        "用 axes.c2p，禁止 get_point_from_proportion；COLOR_SYSTEM；clear_board",
+        "load_and_play_narration；原子化 play≤2"
+      ]
+    },
+    {
+      "id": "kp-ohms-law",
+      "title": "欧姆定律：V=IR",
+      "topic": "欧姆定律：电压、电流与电阻",
+      "major": "物理 / 电路",
+      "audience": "高中",
+      "language": "zh-CN",
+      "key_points": [
+        "定义：V = I R（欧姆导体）",
+        "I = V/R：同电压下 R 越大电流越小",
+        "V、I、R 三角关系",
+        "功率：P = VI = I^2 R = V^2/R"
+      ],
+      "must_teach": [
+        "MathTex 形式化；# [KP-k]",
+        "COLOR_SYSTEM；clear_board；safe_move；load_and_play_narration",
+        "原子化 play≤2；避免深 manim.mobject 导入"
+      ]
+    },
+    {
+      "id": "kp-photosynthesis",
+      "title": "光合作用：光反应与暗反应分工",
+      "topic": "光合作用两阶段：光反应产 ATP/NADPH，暗反应固碳",
+      "major": "生物",
+      "audience": "高中",
+      "language": "zh-CN",
+      "key_points": [
+        "总反应：6CO2+6H2O → C6H12O6+6O2（需光）",
+        "光反应：光能→ATP、NADPH，释放 O2",
+        "暗反应（卡尔文）：用 ATP/NADPH 固定 CO2 成糖",
+        "两阶段在叶绿体不同部位协同"
+      ],
+      "must_teach": [
+        "MathTex / Text 关键式；# [KP-k]",
+        "COLOR_SYSTEM；clear_board；safe_move；load_and_play_narration",
+        "原子化 play≤2；阶段结束 clear_board"
+      ]
+    }
+  ]
+}

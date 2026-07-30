@@ -178,20 +178,20 @@ PATTERNS: tuple[LearnedPattern, ...] = (
     LearnedPattern(
         id="brace-no-get-part-by-tex",
         skill_id="geometry_primitives",
-        description="Brace(get_part_by_tex) crashes when lookup returns None",
+        description="Brace/SurroundingRectangle(get_part_by_tex) crashes when lookup returns None",
         matchers=_rx(
             r"Brace\([^)]*get_part_by_tex",
-            r"forbid Brace\(\.\.\.get_part_by_tex",
+            r"SurroundingRectangle\([^)]*get_part_by_tex",
+            r"forbid Brace/SurroundingRectangle",
+            r"Expected all inputs for parameter mobjects to be a Mobjects",
             r"AttributeError:.*NoneType.*rotate",
             r"mobject\.rotate\(-angle",
         ),
         patch_body=(
-            "## Learned from traces: Brace must wrap a real mobject\n\n"
-            "- Forbidden: `Brace(tex.get_part_by_tex(\"...\"), DOWN)` — "
-            "`get_part_by_tex` often returns `None` → `AttributeError: rotate`.\n"
-            "- Prefer `Brace(whole_mathtex, DOWN)` or skip braces; "
-            "label with `Text(...).next_to(formula, DOWN)`.\n"
-            "- Do not chain Brace on optional submobject lookups.\n"
+            "## Learned from traces: Brace / SurroundingRectangle must wrap a real mobject\n\n"
+            "- Forbidden: `Brace`/`SurroundingRectangle`/`Underline` on `get_part_by_tex(...)`.\n"
+            "- `get_part_by_tex` often returns `None` → TypeError / AttributeError.\n"
+            "- Prefer wrapping the whole MathTex; never chain on optional submobject lookups.\n"
         ),
         roles_hint=("coder",),
     ),
