@@ -22,6 +22,7 @@
   },
   "pipeline": {
     "agents": ["planner", "writer", "coder", "reviewer"],
+    "tts_enabled": true,
     "short_drama": {
       "target_duration_sec": [45, 90],
       "scenes_per_episode": [3, 6],

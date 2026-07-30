@@ -14,25 +14,21 @@
 ## Control flow
 
 ```text
-Initializer (planner)
-  → KP_CHECKLIST (passes=false) + PROGRESS
-Builder (writer → coder)
-  → scenes + narration
-TTS
-RuleGate pre-render (deterministic, `require_color_system=true`)
-  → check_scene_rules → auto-inject COLOR_SYSTEM / safe_move / clear_board / narration / KP / conclusion_phase
-Render
-RuleGate post-render check (no re-inject when pre-render enabled)
-  → still FAIL ⇒ FIX + HANDOFF (no LLM)
-Evaluator (LLM reviewer, read-only posture)
-  → PASS | FIX | INCONCLUSIVE
-FIX round (context reset)
-  → HANDOFF + open checklist only (short prompt)
+EpisodeLoop (shared control plane)
+  worker_generate
+  → TTS (pipeline.tts_enabled)
+  → RuleGate pre-render (check → auto_fix)
+  → Render (or skip if gate still fails)
+  → reviewer_review (post check-only + LLM + adjudicate)
+  → PASS | FIX (+ HANDOFF) | INCONCLUSIVE | ERROR
+
+Adapters:
+  batch_harness.py / harness_control batch  → delivered/<slug>/ + FINAL_REPORT
+  Harness.start / continue                 → ACTIVE.json + workspace/ + library/
 ```
 
-## Phase 2 (in progress)
+## Phase 2 (remaining)
 
-- Unify `batch_harness.py` and `Harness` into one control plane
 - Skill registry / marketplace (ClawHub-style)
 - Trace-driven automatic prompt patches (Hermes-style learning loop)
 

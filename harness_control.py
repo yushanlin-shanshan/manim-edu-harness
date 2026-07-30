@@ -37,9 +37,20 @@ def main() -> int:
     p_start = sub.add_parser("start", help="start one episode from topic or JSON")
     p_start.add_argument("request", nargs="+", help="topic text or JSON object")
 
-    p_batch = sub.add_parser("batch", help="produce episodes from topics file")
+    p_batch = sub.add_parser(
+        "batch",
+        help="produce episodes via shared EpisodeLoop → workspace/delivered/",
+    )
     p_batch.add_argument("--topics", type=Path, default=None)
     p_batch.add_argument("--limit", type=int, default=None)
+    p_batch.add_argument("--start", type=int, default=0)
+    p_batch.add_argument("--dry-run", action="store_true")
+    p_batch.add_argument(
+        "--output",
+        type=Path,
+        default=None,
+        help="delivered output dir (default: workspace/delivered)",
+    )
 
     p_agents = sub.add_parser("agents", help="show pipeline agent roles")
 
@@ -60,7 +71,13 @@ def main() -> int:
         print(json.dumps(h.start(req), ensure_ascii=False, indent=2))
         return 0
     if args.cmd == "batch":
-        results = h.batch(args.topics, limit=args.limit)
+        results = h.batch(
+            args.topics,
+            limit=args.limit,
+            start=args.start,
+            dry_run=args.dry_run,
+            delivered_root=args.output,
+        )
         print(json.dumps(results, ensure_ascii=False, indent=2))
         return 0
     if args.cmd == "agents":
@@ -68,9 +85,14 @@ def main() -> int:
             json.dumps(
                 {
                     "pipeline": ["planner", "writer", "coder", "reviewer"],
-                    "llm": "zhipu (ZHIPU_API_KEY)",
-                    "verification": ["compileall scenes", "verify_manim AST (+ optional manim render)"],
-                    "promotion": "PASS only → workspace/",
+                    "control_plane": "EpisodeLoop (shared with batch_harness)",
+                    "llm": "glm|zhipu via make_llm_client (ZHIPU_API_KEY)",
+                    "topology": "worker → TTS → rule_gate → render → reviewer",
+                    "verification": ["rule_gate", "verify_manim AST (+ optional manim render)"],
+                    "promotion": {
+                        "interactive_start": "PASS → workspace/ + library/",
+                        "batch": "PASS → workspace/delivered/<slug>/",
+                    },
                 },
                 ensure_ascii=False,
                 indent=2,
