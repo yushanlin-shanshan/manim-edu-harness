@@ -20,7 +20,7 @@ We do **not** copy stage UI, whiteboard, OpenClaw skill, or PBL. We copy **contr
 |---|---|---|
 | `lib/prompts` (templates + `{{snippet:}}` + `{{#if}}`) | File-based progressive prompts; missing snippet fails loud | `prompt_loader.py` + `prompts/snippets/` |
 | Two-stage generation (`outline` → `content` → `actions`) | Separate planning from rendering details | Already: planner → writer → coder; keep stage boundaries in HANDOFF |
-| `generation-retry.ts` | Retryable vs non-retryable; exponential backoff; abort-aware | `generation_retry.py` wired in `batch_harness.py` |
+| `generation-retry.ts` | Retryable vs non-retryable; exponential backoff; abort-aware | **Done:** `generation_retry.py` + wired in `ZhipuClient.chat` (deadline/abort) |
 | `eval/orchestration` (pre-fix / post-fix prompt variants) | Prompt change must discriminate on scenarios | `scripts/run_eval_variants.py` + `evals/variants/` |
 | Director graph (single control plane) | One topology bounds the loop | **Done:** `control_plane.EpisodeLoop` shared by `batch_harness` + `Harness`; plan-facing alias `director.run_topic` |
 | Agent allowlist / tool schemas | Deterministic capability bounds | Already: `rule_gate.py` iron laws |
@@ -58,6 +58,7 @@ We do **not** copy stage UI, whiteboard, OpenClaw skill, or PBL. We copy **contr
 16. **Attempt-level HANDOFF compaction** — `HANDOFF_HISTORY.jsonl` + bounded `prior_attempts`.
 17. **Feature flags** — env → config → default (`MANIM_HARNESS_*`).
 18. **Batch quota** — max episodes / attempts / errors / elapsed; `QUOTA_SKIPPED`.
+19. **Abort-aware LLM retry** — `with_generation_retry` in `ZhipuClient` (429/5xx + deadline).
 
 ## Explicit non-goals
 

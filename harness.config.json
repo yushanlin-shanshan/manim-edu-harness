@@ -127,5 +127,11 @@
     "compact_on_attempt": true,
     "max_prior_attempts": 3,
     "max_attempt_summary_chars": 600
+  },
+  "retry": {
+    "max_retries": 5,
+    "base_delay_ms": 1000,
+    "max_delay_ms": 16000,
+    "deadline_seconds": null
   }
 }

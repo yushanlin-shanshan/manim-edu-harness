@@ -10,7 +10,7 @@ Harness Engineering (Mitchell): when an agent makes a mistake, **engineer the ha
 - Skills: `prompts/skills/` assembled per role via `agents.assemble_constraints`
 - Deterministic gate: `rule_gate.py` (auto-injects missing `COLOR_SYSTEM` / `safe_move` / `clear_board` / narration helpers / `conclusion_phase` / KP anchors; rewrites `.set_color` → `.set_fill` when `review_policy.rule_gate_auto_fix` is true)
 - Prompt snippets (OpenMAIC-style): `prompts/snippets/` via `prompt_loader.expand_markdown` / `{{snippet:name}}`
-- Structured API retry: `generation_retry.is_retryable_generation_error` — network/429 resume from HANDOFF, never “wipe fully”
+- Structured API retry: `generation_retry` wired in `ZhipuClient` — network/429/5xx backoff + optional deadline/abort; never wipe candidate
 - On PASS: `mark_checklist_passed` flips `KP_CHECKLIST.json` items (`passes=true` + evidence)
 - **Single control plane:** `control_plane.EpisodeLoop` — both `batch_harness.py` and `Harness` call the same topology (`worker → TTS → rule_gate → render → reviewer`); plan-facing alias `director.run_topic`
 - **Skill registry:** `prompts/skills/registry.json` + `skill_registry.py` (flat `.md` or packaged `SKILL.md`); `python harness_control.py skills`

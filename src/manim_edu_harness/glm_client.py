@@ -13,10 +13,17 @@ class GLMClient(ZhipuClient):
     @classmethod
     def from_config(cls, config: dict[str, Any]) -> "GLMClient":
         glm = config.get("glm") or config.get("zhipu") or {}
+        retry = dict(config.get("retry") or glm.get("retry") or {})
+        max_retries = retry.get("max_retries", glm.get("max_retries"))
+        deadline = retry.get("deadline_seconds", glm.get("retry_deadline_seconds"))
         return cls(
             model=str(glm.get("model", "glm-4-plus")),
             temperature=float(glm.get("temperature", 0.4)),
             max_tokens=int(glm.get("max_tokens", 8192)),
+            max_retries=int(max_retries) if max_retries is not None else None,
+            retry_deadline_seconds=(
+                float(deadline) if deadline is not None else None
+            ),
         )
 
 
@@ -30,6 +37,8 @@ class MockGLMClient(GLMClient):
         self.model = "mock-glm"
         self.temperature = 0.0
         self.max_tokens = 1024
+        self.max_retries = 0
+        self.retry_deadline_seconds = None
         self.calls: list[dict[str, Any]] = []
 
     def chat(self, messages: list[dict[str, str]], **kwargs: Any) -> str:

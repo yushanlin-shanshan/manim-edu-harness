@@ -8,6 +8,7 @@ from pathlib import Path
 
 from manim_edu_harness.agents import assemble_constraints
 from manim_edu_harness.generation_retry import (
+    GenerationAborted,
     is_retryable_generation_error,
     with_generation_retry,
 )
@@ -60,6 +61,43 @@ class GenerationRetryTests(unittest.TestCase):
         result = with_generation_retry(op, label="t", max_retries=2, base_delay_ms=1, max_delay_ms=2)
         self.assertEqual(result, "ok")
         self.assertEqual(calls["n"], 2)
+
+    def test_deadline_aborts(self) -> None:
+        calls = {"n": 0}
+
+        def op(attempt: int) -> str:
+            calls["n"] += 1
+            raise TimeoutError("slow")
+
+        with self.assertRaises(GenerationAborted):
+            with_generation_retry(
+                op,
+                label="deadline",
+                max_retries=5,
+                base_delay_ms=1,
+                max_delay_ms=2,
+                deadline_seconds=0.001,
+            )
+        self.assertGreaterEqual(calls["n"], 1)
+
+    def test_is_aborted_stops(self) -> None:
+        def op(attempt: int) -> str:
+            raise TimeoutError("x")
+
+        with self.assertRaises(GenerationAborted):
+            with_generation_retry(
+                op,
+                label="abort",
+                max_retries=5,
+                base_delay_ms=1,
+                max_delay_ms=2,
+                is_aborted=lambda: True,
+            )
+
+    def test_http_429_retryable(self) -> None:
+        err = RuntimeError("rate")
+        setattr(err, "status_code", 429)
+        self.assertTrue(is_retryable_generation_error(err))
 
 
 class ChecklistProgressTests(unittest.TestCase):

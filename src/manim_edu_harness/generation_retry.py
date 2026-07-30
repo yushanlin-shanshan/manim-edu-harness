@@ -1,6 +1,7 @@
 """Structured generation retry — ported from OpenMAIC lib/generation/generation-retry.ts.
 
 Distinguishes retryable (network / 429 / 5xx) from non-retryable (4xx auth / validation).
+Optional deadline / abort callback mirrors OpenMAIC abort-aware loops.
 """
 
 from __future__ import annotations
@@ -29,6 +30,10 @@ _RETRYABLE_MSG = re.compile(
 )
 
 
+class GenerationAborted(RuntimeError):
+    """Raised when deadline expires or ``is_aborted`` returns True."""
+
+
 @dataclass
 class GenerationRetryEvent:
     label: str
@@ -49,6 +54,8 @@ def _status_code(error: BaseException) -> int | None:
 
 
 def is_retryable_generation_error(error: BaseException) -> bool:
+    if isinstance(error, GenerationAborted):
+        return False
     if getattr(error, "is_retryable", None) is False:
         return False
     if getattr(error, "is_retryable", None) is True:
@@ -71,6 +78,18 @@ def _delay_ms(attempt: int, base_ms: int, max_ms: int) -> int:
     return min(max_ms, exponential + jitter)
 
 
+def _check_abort(
+    *,
+    label: str,
+    deadline_at: float | None,
+    is_aborted: Callable[[], bool] | None,
+) -> None:
+    if is_aborted is not None and is_aborted():
+        raise GenerationAborted(f"{label}: aborted by caller")
+    if deadline_at is not None and time.monotonic() >= deadline_at:
+        raise GenerationAborted(f"{label}: deadline exceeded")
+
+
 def with_generation_retry(
     operation: Callable[[int], T],
     *,
@@ -80,11 +99,23 @@ def with_generation_retry(
     max_delay_ms: int = DEFAULT_MAX_DELAY_MS,
     on_retry: Callable[[GenerationRetryEvent], None] | None = None,
     should_retry_result: Callable[[T], bool] | None = None,
+    deadline_seconds: float | None = None,
+    is_aborted: Callable[[], bool] | None = None,
 ) -> T:
-    """Run operation(attempt) with exponential backoff on retryable errors."""
+    """Run operation(attempt) with exponential backoff on retryable errors.
+
+    ``deadline_seconds`` / ``is_aborted`` stop further attempts without wiping
+    prior candidate state (caller keeps HANDOFF / scenes).
+    """
     max_attempts = max_retries + 1
+    deadline_at = (
+        time.monotonic() + float(deadline_seconds)
+        if deadline_seconds is not None and float(deadline_seconds) > 0
+        else None
+    )
     last_error: BaseException | None = None
     for attempt in range(1, max_attempts + 1):
+        _check_abort(label=label, deadline_at=deadline_at, is_aborted=is_aborted)
         try:
             result = operation(attempt)
             if should_retry_result and should_retry_result(result) and attempt < max_attempts:
@@ -99,9 +130,16 @@ def with_generation_retry(
                             reason="retryable result",
                         )
                     )
-                time.sleep(delay / 1000.0)
+                _sleep_or_abort(
+                    delay,
+                    label=label,
+                    deadline_at=deadline_at,
+                    is_aborted=is_aborted,
+                )
                 continue
             return result
+        except GenerationAborted:
+            raise
         except BaseException as exc:  # noqa: BLE001 — classify then re-raise
             last_error = exc
             if not is_retryable_generation_error(exc) or attempt >= max_attempts:
@@ -117,6 +155,28 @@ def with_generation_retry(
                         reason=str(exc) or type(exc).__name__,
                     )
                 )
-            time.sleep(delay / 1000.0)
+            _sleep_or_abort(
+                delay,
+                label=label,
+                deadline_at=deadline_at,
+                is_aborted=is_aborted,
+            )
     assert last_error is not None
     raise last_error
+
+
+def _sleep_or_abort(
+    delay_ms: int,
+    *,
+    label: str,
+    deadline_at: float | None,
+    is_aborted: Callable[[], bool] | None,
+) -> None:
+    """Sleep in short slices so abort/deadline can interrupt backoff."""
+    remaining = max(0.0, delay_ms / 1000.0)
+    slice_s = 0.05
+    while remaining > 0:
+        _check_abort(label=label, deadline_at=deadline_at, is_aborted=is_aborted)
+        step = min(slice_s, remaining)
+        time.sleep(step)
+        remaining -= step

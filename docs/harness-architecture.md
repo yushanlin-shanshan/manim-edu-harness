@@ -102,7 +102,7 @@ Pattern catalog: [`trace_learn.py`](../src/manim_edu_harness/trace_learn.py) (`P
 ## OpenMAIC pattern imports (see [`openmaic-architecture-map.md`](openmaic-architecture-map.md))
 
 - Prompt snippets: `prompt_loader.py` + `prompts/snippets/` (`{{snippet:}}`, `{{#if}}`)
-- Structured retry: `generation_retry.py` (retryable vs non-retryable; no wipe-on-network)
+- Structured retry: `generation_retry.py` wired into `ZhipuClient.chat` (429/5xx backoff; optional `retry.deadline_seconds` / abort; no wipe-on-network)
 - Checklist progression: `mark_checklist_passed` on adjudicated PASS
 - `.set_color` auto-rewrite → `.set_fill` in rule_gate (template contradiction removed)
 - Shared control plane bits on **Harness** path: TRACE + HANDOFF on FIX + checklist on PASS + skip render when pre-gate fails
