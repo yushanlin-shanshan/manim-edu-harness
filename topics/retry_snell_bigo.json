@@ -1,0 +1,46 @@
+{
+  "knowledge_points": [
+    {
+      "id": "kp-snell",
+      "title": "折射定律：斯涅尔定律",
+      "topic": "光的折射：n1 sin θ1 = n2 sin θ2",
+      "major": "物理 / 光学",
+      "audience": "高中",
+      "language": "zh-CN",
+      "key_points": [
+        "定义：n₁ sin θ₁ = n₂ sin θ₂（界面两侧）",
+        "θ 是光线与法线夹角，不是与界面夹角",
+        "光密→光疏可能全反射（θ₁ > 临界角）",
+        "临界角：sin θ_c = n₂/n₁（n₁>n₂）"
+      ],
+      "must_teach": [
+        "MathTex 写斯涅尔公式；可用入射/折射示意；# [KP-k]",
+        "禁止 Brace/SurroundingRectangle(get_part_by_tex)；COLOR_SYSTEM；clear_board",
+        "safe_move；load_and_play_narration；原子化 play≤2",
+        "旁白必须用 canonical load_and_play_narration；禁止 add_sound(bytes)/movie_file_writer",
+        "禁止 SurroundingRectangle/Brace(mobject[i]) 与 get_part_by_tex；高亮整式"
+      ]
+    },
+    {
+      "id": "kp-big-o",
+      "title": "大O记号：算法复杂度上界",
+      "topic": "大O：f(n)=O(g(n)) 表示渐近上界",
+      "major": "计算机 / 算法入门",
+      "audience": "大学",
+      "language": "zh-CN",
+      "key_points": [
+        "定义：存在 c>0, n0，使 n≥n0 时 0≤f(n)≤c·g(n)",
+        "O 描述上界，不关心常数与低阶项",
+        "常见：O(1)、O(log n)、O(n)、O(n log n)、O(n²)",
+        "比较：嵌套循环常导向 O(n²)"
+      ],
+      "must_teach": [
+        "MathTex 写定义；# [KP-k]",
+        "COLOR_SYSTEM；clear_board；safe_move；load_and_play_narration",
+        "可用简单表格/曲线示意增长；原子化 play≤2",
+        "旁白必须用 canonical load_and_play_narration；禁止 add_sound(bytes)/movie_file_writer",
+        "禁止 SurroundingRectangle/Brace(mobject[i]) 与 get_part_by_tex；高亮整式"
+      ]
+    }
+  ]
+}

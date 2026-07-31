@@ -187,6 +187,14 @@ def check_scene_rules(source: str, *, require_color_system: bool = True) -> list
             "forbid Brace/SurroundingRectangle/Underline(...get_part_by_tex(...)); "
             "get_part_by_tex often returns None — wrap the whole MathTex instead"
         )
+    if re.search(
+        r"(?:Brace|SurroundingRectangle|Underline)\s*\(\s*[A-Za-z_]\w*\s*\[\s*\d+\s*\]",
+        source,
+    ):
+        failures.append(
+            "forbid Brace/SurroundingRectangle/Underline(mobject[i]); "
+            "submobject index often IndexError — wrap the whole MathTex/VGroup"
+        )
     if re.search(r"\.(?:intersection|union|difference)\s*\(", source):
         failures.append(
             "forbid .intersection/.union/.difference on mobjects; for Venn use overlapping Circles + fill, not boolean ops"
@@ -341,13 +349,18 @@ def _fix_color_system_typos(source: str) -> tuple[str, bool]:
 
 
 def _rewrite_brace_get_part_by_tex(source: str) -> tuple[str, bool]:
-    """Wrap(mobj.get_part_by_tex(...), ...) → Wrap(mobj, ...) when None would crash."""
-    new, n = re.subn(
-        r"(Brace|SurroundingRectangle|Underline)\s*\(\s*([A-Za-z_][\w\.]*)\s*\.get_part_by_tex\s*\(\s*(?:\"[^\"]*\"|'[^']*'|[^)]*)\s*\)\s*,",
+    """Wrap(mobj.get_part_by_tex / mobj[i], ...) → Wrap(mobj, ...) when lookup would crash."""
+    new, n1 = re.subn(
+        r"(Brace|SurroundingRectangle|Underline)\s*\(\s*([A-Za-z_][\w\.]*)\s*\.get_part_by_tex\s*\(\s*(?:[\x22\x27][^\x22\x27]*[\x22\x27]|[^)]*)\s*\)\s*,",
         r"\1(\2,",
         source,
     )
-    return new, n > 0
+    new, n2 = re.subn(
+        r"(Brace|SurroundingRectangle|Underline)\s*\(\s*([A-Za-z_]\w*)\s*\[\s*\d+\s*\]\s*,",
+        r"\1(\2,",
+        new,
+    )
+    return new, (n1 + n2) > 0
 
 
 def _strip_mobject_boolean_ops(source: str) -> tuple[str, bool]:

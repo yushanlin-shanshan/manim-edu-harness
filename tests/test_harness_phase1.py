@@ -267,5 +267,22 @@ class EpisodeScene(Scene):
 
 
 
+
+    def test_surrounding_rect_index_autofix(self) -> None:
+        bad = (
+            MINIMAL_OK
+            + "\n    def foo(self):\n"
+            + '        definition = MathTex(r"O(g(n))")\n'
+            + "        r = SurroundingRectangle(definition[2], color=YELLOW)\n"
+        )
+        fails = check_scene_rules(bad)
+        self.assertTrue(any("mobject[i]" in f for f in fails), fails)
+        fixed, labels = auto_fix_scene_source(bad, require_color_system=True)
+        self.assertIn("wrap(get_part_by_tex)→wrap(mobject)", labels)
+        self.assertIn("SurroundingRectangle(definition,", fixed)
+        self.assertNotIn("SurroundingRectangle(definition[2]", fixed)
+        self.assertEqual(check_scene_rules(fixed, require_color_system=True), [])
+
+
 if __name__ == "__main__":
     unittest.main()

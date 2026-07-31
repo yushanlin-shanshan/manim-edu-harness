@@ -112,4 +112,11 @@ def make_right_triangle(a: float = 3.0, b: float = 2.0) -> VGroup:
 - Venn: two overlapping `Circle(..., fill_opacity=0.3)` + a smaller filled circle for A∩B; never boolean geometry.
 <!-- /learned:no-mobject-boolean-ops -->
 
+<!-- learned:no-submobject-index-wrap -->
+<!-- count=1 updated=2026-07-31T03:20Z -->
+## Learned from traces: do not index into MathTex for braces/rects
+
+- Forbidden: `SurroundingRectangle(definition[2], ...)` / `Brace(eq[1], DOWN)` — often `IndexError`.
+- Wrap the whole `MathTex` / `VGroup`, or build the highlight as a separate mobject.
+<!-- /learned:no-submobject-index-wrap -->
 
