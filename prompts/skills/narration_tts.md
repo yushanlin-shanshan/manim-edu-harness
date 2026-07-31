@@ -22,3 +22,13 @@ self.pad_to_narration_length()
 禁止删除或改名该函数。Harness 用豆包 TTS（seed-tts-2.0）从 narration.md 合成 wav。
 
 {{snippet:speech-guidelines}}
+
+<!-- learned:safe-narration-helpers -->
+<!-- count=1 updated=2026-07-31T02:00Z -->
+## Learned from traces: keep canonical narration helpers
+
+- Never `open("narration.wav","rb")` + `add_sound(bytes)` — Path TypeError.
+- Never `self.renderer.file_writer.movie_file_writer` in `pad_to_narration_length`.
+- Use rule_gate canonical: `wave.open` for duration + `add_sound(audio_file, time_offset=...)`.
+<!-- /learned:safe-narration-helpers -->
+

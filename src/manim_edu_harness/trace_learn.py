@@ -196,6 +196,25 @@ PATTERNS: tuple[LearnedPattern, ...] = (
         roles_hint=("coder",),
     ),
     LearnedPattern(
+        id="safe-narration-helpers",
+        skill_id="narration_tts",
+        description="Broken load_and_play_narration/pad_to_narration_length helpers",
+        matchers=_rx(
+            r"unsafe narration helper",
+            r"movie_file_writer",
+            r"add_sound\(bytes\)|open\([\x22\x27]narration\.wav[\x22\x27],\s*[\x22\x27]rb[\x22\x27]",
+            r"argument should be a str or an os\.PathLike",
+            r"__fspath__ returns a str, not 'bytes'",
+        ),
+        patch_body=(
+            "## Learned from traces: keep canonical narration helpers\n\n"
+            "- Never `open(\"narration.wav\",\"rb\")` + `add_sound(bytes)`.\n"
+            "- Never `movie_file_writer` in pad_to_narration_length.\n"
+            "- Use wave.open for duration + `add_sound(audio_file, time_offset=...)`.\n"
+        ),
+        roles_hint=("coder",),
+    ),
+    LearnedPattern(
         id="no-mobject-boolean-ops",
         skill_id="geometry_primitives",
         description="VGroup/Circle .intersection/.union/.difference are unreliable",

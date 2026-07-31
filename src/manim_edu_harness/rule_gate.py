@@ -166,6 +166,15 @@ def check_scene_rules(source: str, *, require_color_system: bool = True) -> list
         failures.append("TransformMatchingTex must not use Text(...) args (use MathTex/Tex only)")
     if re.search(r"def clear_board[\s\S]*?update_frame", source):
         failures.append("clear_board must not call renderer.update_frame")
+    if (
+        re.search(r"movie_file_writer", source)
+        or re.search(r"open\(\s*[\x22\x27]narration\.wav[\x22\x27]\s*,\s*[\x22\x27]rb[\x22\x27]", source)
+        or re.search(r"add_sound\(\s*(?![\x22\x27]|audio_file\b)", source)
+    ):
+        failures.append(
+            "unsafe narration helper — use canonical load_and_play_narration/pad_to_narration_length "
+            "(add_sound path str + wave duration; never add_sound(bytes) or movie_file_writer)"
+        )
     if re.search(r"\.get_point\s*\(", source):
         failures.append("use axes.i2gp/c2p instead of graph.get_point(...)")
     if re.search(r"\.set_color\s*\(", source):
@@ -276,6 +285,37 @@ def _rewrite_clear_board_if_unsafe(source: str) -> tuple[str, bool]:
     return _append_class_methods(cleaned, [CLEAR_BOARD_METHOD]), True
 
 
+def _narration_helpers_unsafe(source: str) -> bool:
+    if re.search(r"open\(\s*[\x22\x27]narration\.wav[\x22\x27]\s*,\s*[\x22\x27]rb[\x22\x27]", source):
+        return True
+    if re.search(r"movie_file_writer", source):
+        return True
+    # add_sound(bytes/var) — allow quoted path or canonical audio_file name
+    if re.search(r"add_sound\(\s*(?![\x22\x27]|audio_file\b)", source):
+        return True
+    return False
+
+def _rewrite_narration_helpers_if_unsafe(source: str) -> tuple[str, bool]:
+    """Replace broken load_and_play_narration / pad_to_narration_length with canonical ones."""
+    if not _narration_helpers_unsafe(source):
+        return source, False
+    cleaned = source
+    cleaned = re.sub(
+        r"\n    def load_and_play_narration\(self\):[\s\S]*?(?=\n    def |\nclass |\Z)",
+        "\n",
+        cleaned,
+        count=1,
+    )
+    cleaned = re.sub(
+        r"\n    def pad_to_narration_length\(self\):[\s\S]*?(?=\n    def |\nclass |\Z)",
+        "\n",
+        cleaned,
+        count=1,
+    )
+    cleaned = _ensure_import_os(cleaned)
+    return _append_class_methods(cleaned, [LOAD_NARRATION_METHOD, PAD_NARRATION_METHOD]), True
+
+
 def _rewrite_set_color(source: str) -> tuple[str, bool]:
     """Rewrite forbidden .set_color( → .set_fill( (Mitchell: gate must fix)."""
     if not re.search(r"\.set_color\s*\(", source):
@@ -359,6 +399,10 @@ def auto_fix_scene_source(source: str, *, require_color_system: bool = True) -> 
     if cb_fixed:
         fixes.append("clear_board")
         print("[Rule Gate] Auto-fixing unsafe clear_board (update_frame)...")
+    out, narr_fixed = _rewrite_narration_helpers_if_unsafe(out)
+    if narr_fixed:
+        fixes.append("narration helpers")
+        print("[Rule Gate] Auto-fixing unsafe load_and_play_narration/pad_to_narration_length...")
 
     methods: list[str] = []
     if "def safe_move" not in out and "SAFE_Y" not in out:

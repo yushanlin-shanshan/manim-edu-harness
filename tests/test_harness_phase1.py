@@ -232,6 +232,40 @@ class EpisodeScene(Scene):
             self.assertIn("COLOR_SYSTEM", text)
             self.assertIn("def conclusion_phase", text)
 
+    def test_unsafe_narration_helpers_autofix(self) -> None:
+        bad = """
+from manim import *
+import os
+COLOR_SYSTEM = {"primary": BLUE}
+class EpisodeScene(Scene):
+    def construct(self):
+        # [KP-1]
+        # [KP-2]
+        self.load_and_play_narration()
+        self.pad_to_narration_length()
+    def clear_board(self):
+        pass
+    def safe_move(self, mobj, target_point):
+        SAFE_Y = 3.5
+        mobj.move_to(target_point)
+    def load_and_play_narration(self):
+        with open("narration.wav", "rb") as f:
+            data = f.read()
+        self.add_sound(data)
+    def pad_to_narration_length(self):
+        d = self.renderer.file_writer.movie_file_writer.duration
+        self.wait(d)
+"""
+        fails = check_scene_rules(bad)
+        self.assertTrue(any("unsafe narration" in f for f in fails), fails)
+        fixed, labels = auto_fix_scene_source(bad, require_color_system=True)
+        self.assertIn("narration helpers", labels)
+        self.assertNotIn("movie_file_writer", fixed)
+        self.assertNotIn('open("narration.wav", "rb")', fixed)
+        self.assertIn("add_sound(audio_file", fixed)
+        self.assertEqual(check_scene_rules(fixed, require_color_system=True), [])
+
+
 
 if __name__ == "__main__":
     unittest.main()
