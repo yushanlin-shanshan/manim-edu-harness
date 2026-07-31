@@ -95,12 +95,6 @@ workspace/              # formal promoted delivery
 runs/                   # per-run candidate, audits, TRACE
 ```
 
-## Security
-
-- Do **not** put API keys in requests, prompts, git, or CI logs.
-- See [SECURITY.md](SECURITY.md).
-- Rotate any key that was pasted into chat or tickets.
-
 ## Design notes
 
 Survey-aligned choices:
