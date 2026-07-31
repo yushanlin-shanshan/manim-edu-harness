@@ -127,6 +127,15 @@ def _kp_ids(source: str) -> set[str]:
     return set(re.findall(r"#\s*\[KP-(\d+)\]", source))
 
 
+def _phase_body(source: str, phase: str) -> str:
+    """Return indented body of `def {phase}(self):` or empty."""
+    m = re.search(
+        rf"\n    def {phase}\(self\)[^:]*:\n([\s\S]*?)(?=\n    def |\nclass |\Z)",
+        source,
+    )
+    return m.group(1) if m else ""
+
+
 def check_scene_rules(source: str, *, require_color_system: bool = True) -> list[str]:
     """Return list of failure strings (empty = pass)."""
     failures: list[str] = []
@@ -153,6 +162,12 @@ def check_scene_rules(source: str, *, require_color_system: bool = True) -> list
         failures.append("missing # [DRAMA-OPEN] opening drama beat")
     if not re.search(r"#\s*\[DRAMA-CLOSE\]|#\s*\[DRAMA-2\]", source):
         failures.append("missing # [DRAMA-CLOSE] closing drama beat")
+    if "def derivation_phase" in source:
+        deriv = _phase_body(source, "derivation_phase")
+        if "MathTex" not in deriv and "Tex(" not in deriv:
+            failures.append(
+                "derivation_phase lacks MathTex/Tex — knowledge middle must stay lecturer-grade (no dry-goods dilution)"
+            )
     if require_color_system and "COLOR_SYSTEM" not in source:
         failures.append("missing COLOR_SYSTEM")
     for phase in ("setup_phase", "derivation_phase", "conclusion_phase"):

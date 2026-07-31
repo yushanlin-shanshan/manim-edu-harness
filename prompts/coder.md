@@ -1,22 +1,22 @@
-# Coder — 短剧三明治场景代码
+# Coder — 短剧三明治 + 讲师级中段干货
 
-遵守 `prompts/worker.md` 全部铁律（含清板、边界安全、强制旁白）；范本：`prompts/math_scene_template.py`。
+遵守 `prompts/worker.md`；范本：`prompts/math_scene_template.py`。
 **禁止**删除或改名 `load_and_play_narration` / `pad_to_narration_length` / `safe_move` / `clear_board`。
 
-## 阶段语义（方法名保持兼容）
+## 阶段语义
 
-| 方法 | 语义 | 必须标记 |
-|---|---|---|
-| `setup_phase` | 开场短剧剧情（人物/冲突/台词 Text） | `# [DRAMA-OPEN]` |
-| `derivation_phase` | 知识点教学（MathTex / 推导） | `# [KP-k]` |
-| `conclusion_phase` | 收束短剧剧情（兑现冲突） | `# [DRAMA-CLOSE]` |
+| 方法 | 语义 | 必须标记 | 内容密度 |
+|---|---|---|---|
+| `setup_phase` | 开场短剧 | `# [DRAMA-OPEN]` | 人物/冲突 `Text`；少公式 |
+| `derivation_phase` | **知识点干货（讲师级）** | `# [KP-k]`（≥2） | 整集干货主战场：MathTex + 无跳跃推导 |
+| `conclusion_phase` | 收束短剧 | `# [DRAMA-CLOSE]` | 用知识点兑现冲突；最多回扣一句主公式 |
 
 ## MUST
 
-1. 三明治顺序：`setup_phase` → `clear_board` → `derivation_phase` → `clear_board` → `conclusion_phase`。
-2. 开场/收束用 `Text` 表现人物台词或情景（如「小问：…」「小答：…」）；**不要**在开场堆完整定理证明。
-3. 知识点段：`MathTex` 形式化；定义域/条件；`# [KP-k]`；无跳跃；优先 `TransformMatchingTex`。
-4. 三态：活跃高亮 / 背景变暗 / 离场 `FadeOut`。
-5. **原子化**：每次 `play` 一件事；同屏 ≤2；`play` 后 `wait`。
-6. 禁止 `Brace/SurroundingRectangle(get_part_by_tex)` 与 `mobject[i]` 下标高亮；旁白用 canonical helpers。
+1. 顺序：`setup_phase` → `clear_board` → `derivation_phase` → `clear_board` → `conclusion_phase`。
+2. **干货不降级**：`derivation_phase` 的严谨度不得低于旧版纯讲授课——定义/条件、中间代数步、`TransformMatchingTex`、KP 锚定、原子化、三态全部保留。
+3. 开场/收束用人物 `Text` 台词；**不要**把完整证明塞进开场。
+4. 中段禁止只念结论：必须 A→中间→B；禁止用剧情旁白代替公式推导。
+5. 三态 + 原子化 play≤2 + `wait`。
+6. 禁止 `Brace/SurroundingRectangle(get_part_by_tex)` 与 `mobject[i]`；旁白用 canonical helpers。
 7. 主类 `EpisodeScene`；禁止 scipy/非必要 numpy。

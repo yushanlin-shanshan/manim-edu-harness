@@ -66,3 +66,9 @@ JSON schema（字段可增不可缺核心）：
 - 语言与 REQUEST.language 一致（默认中文）。
 
 {{snippet:json-output-rules}}
+
+## 干货不降级（硬约束）
+
+- Knowledge 拍时长建议 ≥ 整集 45%（约 40–60s / 60–120s）。
+- `derivation_steps` 必须可直接落到 `derivation_phase`，代数跳跃 ≤1 行。
+- 开场/收束再精彩，也不能省略中段形式化与条件；剧情服务于引出/兑现知识点，不替代知识点。

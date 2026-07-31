@@ -56,7 +56,7 @@ class EpisodeScene(Scene):
         pass
 
     def derivation_phase(self):
-        pass
+        MathTex(r"E=mc^2")
 '''
 
 
@@ -137,7 +137,7 @@ class EpisodeScene(Scene):
     def setup_phase(self):
         pass
     def derivation_phase(self):
-        pass
+        MathTex(r"E=mc^2")
 '''
         fails = check_scene_rules(src)
         self.assertTrue(any("conclusion_phase" in f for f in fails))
@@ -235,6 +235,38 @@ class EpisodeScene(Scene):
             text = (root / "scenes" / "episode.py").read_text(encoding="utf-8")
             self.assertIn("COLOR_SYSTEM", text)
             self.assertIn("def conclusion_phase", text)
+
+
+    def test_derivation_requires_mathtex(self) -> None:
+        src = """
+from manim import *
+COLOR_SYSTEM = {"primary": BLUE}
+class EpisodeScene(Scene):
+    def construct(self):
+        # [DRAMA-OPEN]
+        # [KP-1]
+        # [KP-2]
+        # [DRAMA-CLOSE]
+        self.setup_phase()
+        self.derivation_phase()
+        self.conclusion_phase()
+        self.load_and_play_narration()
+    def setup_phase(self):
+        Text("ask")
+    def derivation_phase(self):
+        Text("no formula here")
+    def conclusion_phase(self):
+        Text("payoff")
+    def clear_board(self):
+        pass
+    def safe_move(self, mobj, target_point):
+        SAFE_Y = 3.5
+        mobj.move_to(target_point)
+    def load_and_play_narration(self):
+        pass
+"""
+        fails = check_scene_rules(src)
+        self.assertTrue(any("MathTex" in f or "dry-goods" in f for f in fails), fails)
 
 
 if __name__ == "__main__":

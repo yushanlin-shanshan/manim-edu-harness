@@ -12,6 +12,8 @@
 
 禁止把整集写成纯课堂讲授课；开场不得直接念完整定义。
 
+**干货不降级**：两端短剧不得稀释中段。`derivation_phase` 仍须满足下文「三条铁律」的数学严谨 / 原子化 / 三态——质量下限与升级三明治之前相同。
+
 权威实现：`prompts/planner.md` / `writer.md` / `coder.md` / `reviewer.md` · 门禁：`rule_gate.py`。
 
 ---

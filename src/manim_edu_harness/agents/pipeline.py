@@ -160,7 +160,7 @@ class AgentPipeline:
     def run_writer(self, plan: dict[str, Any]) -> str:
         system = role_system_prompt("writer")
         user = (
-            "根据规划写完整剧本（Markdown）。强制三明治：开场短剧剧情→知识点教学→收束短剧剧情。\n"
+            "根据规划写完整剧本（Markdown）。强制三明治：开场短剧剧情→知识点教学→收束短剧剧情；中段干货不降级（同旧讲师标准）。\n"
             "Setup=# [DRAMA-OPEN] 人物台词；Derivation=# [KP-k] 形式化推导；Conclusion=# [DRAMA-CLOSE] 兑现冲突。\n"
             "阶段之间必须硬清屏；阶段内才用三态变暗；中段公式用 TransformMatchingTex。\n"
             "文末必须另起一节：## TTS_NARRATION\n"
@@ -246,7 +246,7 @@ class AgentPipeline:
             )
         user = (
             "根据规划与剧本生成 ManimCommunity 场景。只输出 Python；类名 EpisodeScene。\n"
-            "短剧三明治+电影感：setup=开场剧情(# [DRAMA-OPEN])、derivation=知识点(# [KP-k])、"
+            "短剧三明治+中段讲师级干货不降级：setup=开场剧情(# [DRAMA-OPEN])、derivation=知识点(# [KP-k])、"
             "conclusion=收束剧情(# [DRAMA-CLOSE])；文件头 COLOR_SYSTEM；阶段硬清屏；"
             "开场/收束用 Text 人物台词，中段 MathTex+TransformMatchingTex；"
             "禁 get_part_by_tex/mobject[i] 高亮；旁白用 canonical helpers。\n\n"
