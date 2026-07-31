@@ -46,10 +46,6 @@ python harness_control.py status
 
 同一时间只允许一个未结束 run。
 
-## 安全
-
-切勿把智谱 API Key 写进代码、Issue、Prompt 或提交记录。详见 [SECURITY.md](SECURITY.md)。若密钥曾出现在聊天中，请尽快在开放平台轮换。
-
 ## License
 
 MIT
