@@ -30,14 +30,25 @@
     "tts_enabled": true,
     "short_drama": {
       "target_duration_sec": [
-        45,
-        90
+        60,
+        120
       ],
       "scenes_per_episode": [
         3,
         6
       ],
-      "style": "理科知识点短剧：人物对话驱动 + Manim 可视化讲解"
+      "structure": "短剧剧情 → 知识点 → 短剧剧情",
+      "style": "理科知识点短剧：开场人物冲突 + 中段形式化教学 + 收束剧情兑现",
+      "phase_map": {
+        "setup_phase": "DramaOpen",
+        "derivation_phase": "Knowledge",
+        "conclusion_phase": "DramaClose"
+      },
+      "required_markers": [
+        "DRAMA-OPEN",
+        "KP-k",
+        "DRAMA-CLOSE"
+      ]
     }
   },
   "verification_commands": [
@@ -86,13 +97,7 @@
   },
   "batch": {
     "concurrency": 1,
-    "topics_file": "topics/knowledge_points.json",
-    "quota": {
-      "max_episodes": null,
-      "max_attempts_total": null,
-      "max_errors": null,
-      "max_elapsed_seconds": null
-    }
+    "topics_file": "topics/knowledge_points.json"
   },
   "learning": {
     "min_count": 2,
@@ -127,11 +132,5 @@
     "compact_on_attempt": true,
     "max_prior_attempts": 3,
     "max_attempt_summary_chars": 600
-  },
-  "retry": {
-    "max_retries": 5,
-    "base_delay_ms": 1000,
-    "max_delay_ms": 16000,
-    "deadline_seconds": null
   }
 }

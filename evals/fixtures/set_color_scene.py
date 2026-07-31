@@ -4,8 +4,10 @@ COLOR_SYSTEM = {"primary": BLUE}
 
 class EpisodeScene(Scene):
     def construct(self):
+        # [DRAMA-OPEN]
         # [KP-1]
         # [KP-2]
+        # [DRAMA-CLOSE]
         self.setup_phase()
         self.clear_board()
         self.load_and_play_narration()

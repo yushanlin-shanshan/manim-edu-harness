@@ -1,4 +1,6 @@
-"""University-lecturer template: derivative = limit of secant slopes.
+"""Short-drama sandwich template: DramaOpen → Knowledge → DramaClose.
+
+University-lecturer rigor applies to the Knowledge (derivation) middle.
 
 Demonstrates iron laws:
   - MathTex + domain/conditions; no derivation jumps; # [KP-k] tags
@@ -93,6 +95,7 @@ class EpisodeScene(Scene):
     #   KP-4 切线方程：y-f(a)=f'(a)(x-a)
     # ------------------------------------------------------------------
     def setup_phase(self):
+        # [DRAMA-OPEN] 开场短剧：人物冲突
         # [KP-1] 形式化定义先行 + 条件
         title = Text("Setup: definition", font_size=52)
         title.to_edge(UP)
@@ -301,6 +304,7 @@ class EpisodeScene(Scene):
     # Conclusion — 切线方程（清板后自包含，不依赖上一阶段引用）
     # ------------------------------------------------------------------
     def conclusion_phase(self):
+        # [DRAMA-CLOSE] 收束短剧：用知识点兑现开场冲突
         # [KP-4]
         concl = Text("Conclusion", font_size=52, color=YELLOW)
         concl.to_edge(UP)

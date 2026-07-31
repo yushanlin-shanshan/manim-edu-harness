@@ -1,0 +1,24 @@
+{
+  "description": "Validate short-drama sandwich standard",
+  "knowledge_points": [
+    {
+      "id": "kp-drama-ohms",
+      "title": "欧姆定律短剧：电路里的争吵",
+      "topic": "欧姆定律 V=IR：用短剧讲清电压电流电阻",
+      "major": "物理 / 电路",
+      "audience": "高中",
+      "language": "zh-CN",
+      "format": "理科知识点短剧",
+      "key_points": [
+        "定义：V = I R（欧姆导体）",
+        "I = V/R：同电压下 R 越大电流越小",
+        "功率：P = VI = I^2 R"
+      ],
+      "must_teach": [
+        "三明治：开场人物冲突 → 中段 MathTex 知识点 → 收束兑现",
+        "# [DRAMA-OPEN] / # [KP-k] / # [DRAMA-CLOSE]",
+        "COLOR_SYSTEM；clear_board；safe_move；load_and_play_narration；原子化 play≤2"
+      ]
+    }
+  ]
+}

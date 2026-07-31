@@ -123,7 +123,7 @@ class AgentPipeline:
     def run_planner(self) -> dict[str, Any]:
         system = role_system_prompt("planner")
         user = (
-            "请为下列知识点设计一集大学讲师级讲解方案（JSON）。"
+            "请为下列知识点设计一集「短剧剧情→知识点→短剧剧情」短视频方案（JSON）。"
             "必须：定义域/条件、无跳跃 derivation_steps、三态 visual、原子动画。\n\n"
             f"{json.dumps(self.request, ensure_ascii=False, indent=2)}"
         )
@@ -160,11 +160,11 @@ class AgentPipeline:
     def run_writer(self, plan: dict[str, Any]) -> str:
         system = role_system_prompt("writer")
         user = (
-            "根据规划写完整剧本（Markdown）。大学讲师级：定义→定义域/条件→强制展开推导→结论。\n"
-            "阶段之间必须硬清屏（FadeOut 全部 mobjects）；阶段内才用三态变暗。\n"
-            "每分句标注：[原子动画][KP-k]；公式用 TransformMatchingTex。\n"
+            "根据规划写完整剧本（Markdown）。强制三明治：开场短剧剧情→知识点教学→收束短剧剧情。\n"
+            "Setup=# [DRAMA-OPEN] 人物台词；Derivation=# [KP-k] 形式化推导；Conclusion=# [DRAMA-CLOSE] 兑现冲突。\n"
+            "阶段之间必须硬清屏；阶段内才用三态变暗；中段公式用 TransformMatchingTex。\n"
             "文末必须另起一节：## TTS_NARRATION\n"
-            "该节为口语旁白（200–450字，适合朗读，约200–300字/分钟；少念生硬公式符号）。\n\n"
+            "旁白按「剧情开场 / 知识点 / 剧情收束」三段空行（200–450字，适合朗读）。\n\n"
             f"REQUEST:\n{json.dumps(self.request, ensure_ascii=False, indent=2)}\n\n"
             f"PLAN:\n{json.dumps(plan, ensure_ascii=False, indent=2)}"
         )
@@ -187,7 +187,7 @@ class AgentPipeline:
         system = role_system_prompt("writer")
         user = (
             "只输出口语旁白正文（不要 Markdown 标题以外的格式），200–450 汉字，"
-            "按 Setup/Derivation/Conclusion 分段空行，适合 TTS 朗读。\n\n"
+            "按「剧情开场 / 知识点 / 剧情收束」三段空行，适合 TTS 朗读。\n\n"
             f"PLAN:\n{json.dumps(plan, ensure_ascii=False, indent=2)}\n\n"
             f"SCRIPT:\n{script[:6000]}"
         )
@@ -246,10 +246,10 @@ class AgentPipeline:
             )
         user = (
             "根据规划与剧本生成 ManimCommunity 场景。只输出 Python；类名 EpisodeScene。\n"
-            "大学讲师级+电影感：文件头 COLOR_SYSTEM/FONT_SIZES/ANIMATION_DURATIONS；"
-            "阶段硬清屏；左主右辅布局；MathTex=primary、说明=secondary、变暗=background_dim；"
-            "强制展开+TransformMatchingTex；FadeIn/Transform 用 smooth；禁随机色与 MathTex 中文；"
-            "可 add_sound('narration.wav')。\n\n"
+            "短剧三明治+电影感：setup=开场剧情(# [DRAMA-OPEN])、derivation=知识点(# [KP-k])、"
+            "conclusion=收束剧情(# [DRAMA-CLOSE])；文件头 COLOR_SYSTEM；阶段硬清屏；"
+            "开场/收束用 Text 人物台词，中段 MathTex+TransformMatchingTex；"
+            "禁 get_part_by_tex/mobject[i] 高亮；旁白用 canonical helpers。\n\n"
             f"REQUEST:\n{json.dumps(self.request, ensure_ascii=False, indent=2)}\n\n"
             f"PLAN:\n{json.dumps(plan, ensure_ascii=False, indent=2)}\n\n"
             f"SCRIPT:\n{script}"

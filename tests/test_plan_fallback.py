@@ -13,7 +13,10 @@ class PlanFallbackTests(unittest.TestCase):
         self.assertEqual(plan["title"], "导数定义")
         self.assertTrue(plan["learning_objectives"])
         self.assertEqual(len(plan["beats"]), 3)
-        self.assertEqual(plan["beats"][0]["name"], "Setup")
+        self.assertEqual(plan["beats"][0]["name"], "DramaOpen")
+        self.assertEqual(plan["beats"][1]["name"], "Knowledge")
+        self.assertEqual(plan["beats"][2]["name"], "DramaClose")
+        self.assertTrue(plan.get("characters"))
         self.assertTrue(plan["_fallbacks_applied"])
 
     def test_preserves_existing_fields(self) -> None:
@@ -29,6 +32,7 @@ class PlanFallbackTests(unittest.TestCase):
         self.assertEqual(plan["title"], "T")
         self.assertEqual(plan["learning_objectives"], ["a"])
         self.assertEqual(len(plan["beats"]), 1)
+        self.assertEqual(plan["beats"][0]["name"], "DramaOpen")
 
     def test_non_dict_becomes_minimal(self) -> None:
         plan = apply_plan_fallbacks(None, {"topic": "x"})  # type: ignore[arg-type]

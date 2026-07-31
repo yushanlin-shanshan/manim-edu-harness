@@ -8,27 +8,53 @@ from typing import Any
 
 _DEFAULT_BEATS = (
     {
-        "name": "Setup",
-        "duration_sec": 25,
-        "dialogue_goal": "给出定义与适用条件",
-        "visual": "标题 + 定义式；次要对象变暗",
-        "concept": "definition",
+        "name": "DramaOpen",
+        "duration_sec": 20,
+        "dialogue_goal": "人物冲突：提出与知识点相关的具体困境（勿直接念定义）",
+        "visual": "人物台词 Text；场景道具；原子动画",
+        "concept": "hook",
     },
     {
-        "name": "Derivation",
-        "duration_sec": 40,
-        "dialogue_goal": "无跳跃展开关键推导",
-        "visual": "主公式 TransformMatchingTex；步骤原子化",
-        "concept": "derivation",
+        "name": "Knowledge",
+        "duration_sec": 45,
+        "dialogue_goal": "用知识点严格破解开场困境",
+        "visual": "主公式 TransformMatchingTex；步骤原子化；三态",
+        "concept": "teach",
     },
     {
-        "name": "Conclusion",
-        "duration_sec": 25,
-        "dialogue_goal": "总结可检验结论与常见误区",
-        "visual": "结论高亮；清板后收束",
-        "concept": "conclusion",
+        "name": "DramaClose",
+        "duration_sec": 20,
+        "dialogue_goal": "回到人物：用知识点兑现冲突并收束",
+        "visual": "人物复现；结论兑现；清板后收束",
+        "concept": "payoff",
     },
 )
+
+_BEAT_ALIASES = {
+    "setup": "DramaOpen",
+    "dramaopen": "DramaOpen",
+    "drama_open": "DramaOpen",
+    "hook": "DramaOpen",
+    "open": "DramaOpen",
+    "derivation": "Knowledge",
+    "knowledge": "Knowledge",
+    "teach": "Knowledge",
+    "middle": "Knowledge",
+    "conclusion": "DramaClose",
+    "dramaclose": "DramaClose",
+    "drama_close": "DramaClose",
+    "close": "DramaClose",
+    "payoff": "DramaClose",
+}
+
+
+def _canon_beat_name(name: str, index: int) -> str:
+    import re
+
+    key = re.sub(r"[^a-z]", "", str(name or "").lower())
+    if key in _BEAT_ALIASES:
+        return _BEAT_ALIASES[key]
+    return ("DramaOpen", "Knowledge", "DramaClose")[min(index, 2)]
 
 
 def apply_plan_fallbacks(
@@ -53,9 +79,17 @@ def apply_plan_fallbacks(
     if not str(out.get("title") or "").strip():
         out["title"] = topic
     if not str(out.get("summary") or "").strip():
-        out["summary"] = f"{topic}：定义 → 推导 → 结论"
+        out["summary"] = f"{topic}：开场剧情 → 知识点 → 收束剧情"
     if not str(out.get("audience") or "").strip():
-        out["audience"] = str(request.get("audience") or "大学一年级")
+        out["audience"] = str(request.get("audience") or "高中 / 大学一年级")
+    if not str(out.get("format") or "").strip():
+        out["format"] = str(request.get("format") or "理科知识点短剧")
+
+    if not isinstance(out.get("characters"), list) or not out.get("characters"):
+        out["characters"] = [
+            {"name": "小问", "role": "ask"},
+            {"name": "小答", "role": "teach"},
+        ]
 
     objs = out.get("learning_objectives")
     if not isinstance(objs, list) or not objs:
@@ -74,7 +108,9 @@ def apply_plan_fallbacks(
                 beat = {"name": f"beat-{i+1}", "visual": str(beat)}
             beat = dict(beat)
             if not str(beat.get("name") or "").strip():
-                beat["name"] = ("Setup", "Derivation", "Conclusion")[min(i, 2)]
+                beat["name"] = ("DramaOpen", "Knowledge", "DramaClose")[min(i, 2)]
+            else:
+                beat["name"] = _canon_beat_name(str(beat.get("name")), i)
             if not str(beat.get("visual") or "").strip():
                 beat["visual"] = "主对象活跃；次要对象变暗；原子动画"
             normalized.append(beat)
@@ -83,6 +119,11 @@ def apply_plan_fallbacks(
     for key in ("key_formulas", "derivation_steps", "common_misconceptions", "manim_notes"):
         if not isinstance(out.get(key), list):
             out[key] = []
+    if not out["manim_notes"]:
+        out["manim_notes"] = [
+            "setup_phase=DramaOpen；derivation_phase=Knowledge；conclusion_phase=DramaClose",
+            "必须 # [DRAMA-OPEN] / # [KP-k] / # [DRAMA-CLOSE]",
+        ]
 
     if not isinstance(out.get("key_points_map"), list):
         kps = list(request.get("key_points") or [])

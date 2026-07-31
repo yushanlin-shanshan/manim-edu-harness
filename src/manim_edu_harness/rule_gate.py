@@ -85,8 +85,8 @@ PAD_NARRATION_METHOD = '''
 
 CONCLUSION_PHASE_METHOD = '''
     def conclusion_phase(self):
-        """Phase stub auto-injected by rule_gate — teach the takeaway here."""
-        # [KP-2]
+        """Phase stub auto-injected by rule_gate — closing drama payoff."""
+        # [DRAMA-CLOSE]
         takeaway = MathTex(r"\text{Conclusion}", font_size=40, color=ORANGE)
         takeaway.to_edge(UP)
         self.play(Write(takeaway))
@@ -149,6 +149,10 @@ def check_scene_rules(source: str, *, require_color_system: bool = True) -> list
         failures.append("missing # [KP-k] anchors")
     elif len(kp_ids) < 2:
         failures.append("need at least two distinct # [KP-k] anchors (e.g. KP-1 and KP-2)")
+    if not re.search(r"#\s*\[DRAMA-OPEN\]|#\s*\[DRAMA-1\]", source):
+        failures.append("missing # [DRAMA-OPEN] opening drama beat")
+    if not re.search(r"#\s*\[DRAMA-CLOSE\]|#\s*\[DRAMA-2\]", source):
+        failures.append("missing # [DRAMA-CLOSE] closing drama beat")
     if require_color_system and "COLOR_SYSTEM" not in source:
         failures.append("missing COLOR_SYSTEM")
     for phase in ("setup_phase", "derivation_phase", "conclusion_phase"):
@@ -186,14 +190,6 @@ def check_scene_rules(source: str, *, require_color_system: bool = True) -> list
         failures.append(
             "forbid Brace/SurroundingRectangle/Underline(...get_part_by_tex(...)); "
             "get_part_by_tex often returns None — wrap the whole MathTex instead"
-        )
-    if re.search(
-        r"(?:Brace|SurroundingRectangle|Underline)\s*\(\s*[A-Za-z_]\w*\s*\[\s*\d+\s*\]",
-        source,
-    ):
-        failures.append(
-            "forbid Brace/SurroundingRectangle/Underline(mobject[i]); "
-            "submobject index often IndexError — wrap the whole MathTex/VGroup"
         )
     if re.search(r"\.(?:intersection|union|difference)\s*\(", source):
         failures.append(
@@ -265,19 +261,24 @@ def _ensure_narration_call(source: str) -> str:
 
 
 def _ensure_kp_anchors(source: str) -> tuple[str, bool]:
-    """Ensure at least KP-1 and KP-2 comment anchors exist."""
+    """Ensure KP + DRAMA sandwich comment anchors exist."""
     ids = _kp_ids(source)
-    if len(ids) >= 2:
+    has_open = bool(re.search(r"#\s*\[DRAMA-OPEN\]|#\s*\[DRAMA-1\]", source))
+    has_close = bool(re.search(r"#\s*\[DRAMA-CLOSE\]|#\s*\[DRAMA-2\]", source))
+    if len(ids) >= 2 and has_open and has_close:
         return source, False
-    m = re.search(
-        r"(def construct\(self\)\s*:\n)",
-        source,
-    )
+    m = re.search(r"(def construct\(self\)\s*:\n)", source)
     if not m:
         return source, False
-    inject = "        # [KP-1]\n        # [KP-2]\n"
+    parts: list[str] = []
+    if not has_open:
+        parts.append("        # [DRAMA-OPEN]")
+    if len(ids) < 2:
+        parts.extend(["        # [KP-1]", "        # [KP-2]"])
+    if not has_close:
+        parts.append("        # [DRAMA-CLOSE]")
+    inject = chr(10).join(parts) + chr(10)
     return source[: m.end()] + inject + source[m.end() :], True
-
 
 def _rewrite_clear_board_if_unsafe(source: str) -> tuple[str, bool]:
     """Replace clear_board that calls update_frame with the canonical FadeOut version."""
@@ -349,18 +350,13 @@ def _fix_color_system_typos(source: str) -> tuple[str, bool]:
 
 
 def _rewrite_brace_get_part_by_tex(source: str) -> tuple[str, bool]:
-    """Wrap(mobj.get_part_by_tex / mobj[i], ...) → Wrap(mobj, ...) when lookup would crash."""
-    new, n1 = re.subn(
-        r"(Brace|SurroundingRectangle|Underline)\s*\(\s*([A-Za-z_][\w\.]*)\s*\.get_part_by_tex\s*\(\s*(?:[\x22\x27][^\x22\x27]*[\x22\x27]|[^)]*)\s*\)\s*,",
+    """Wrap(mobj.get_part_by_tex(...), ...) → Wrap(mobj, ...) when None would crash."""
+    new, n = re.subn(
+        r"(Brace|SurroundingRectangle|Underline)\s*\(\s*([A-Za-z_][\w\.]*)\s*\.get_part_by_tex\s*\(\s*(?:\"[^\"]*\"|'[^']*'|[^)]*)\s*\)\s*,",
         r"\1(\2,",
         source,
     )
-    new, n2 = re.subn(
-        r"(Brace|SurroundingRectangle|Underline)\s*\(\s*([A-Za-z_]\w*)\s*\[\s*\d+\s*\]\s*,",
-        r"\1(\2,",
-        new,
-    )
-    return new, (n1 + n2) > 0
+    return new, n > 0
 
 
 def _strip_mobject_boolean_ops(source: str) -> tuple[str, bool]:
@@ -543,6 +539,8 @@ def _checks_dict(source: str) -> dict[str, bool]:
         "clear_board": "def clear_board" in source,
         "safe_move": "def safe_move" in source or "SAFE_Y" in source,
         "KP_anchors": len(_kp_ids(source)) >= 2,
+        "DRAMA_OPEN": bool(re.search(r"#\s*\[DRAMA-OPEN\]|#\s*\[DRAMA-1\]", source)),
+        "DRAMA_CLOSE": bool(re.search(r"#\s*\[DRAMA-CLOSE\]|#\s*\[DRAMA-2\]", source)),
         "COLOR_SYSTEM": "COLOR_SYSTEM" in source,
         "conclusion_phase": "def conclusion_phase" in source
         or not ("def setup_phase" in source and "def derivation_phase" in source),

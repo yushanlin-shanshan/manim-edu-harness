@@ -1,5 +1,15 @@
 # Skill: animation_atomic
 
+## 短剧三明治（硬结构）
+
+| 阶段方法 | 语义 | 标记 |
+|---|---|---|
+| `setup_phase` | 开场短剧剧情 | `# [DRAMA-OPEN]` |
+| `derivation_phase` | 知识点教学 | `# [KP-k]` |
+| `conclusion_phase` | 收束短剧剧情 | `# [DRAMA-CLOSE]` |
+
+开场/收束用人物 `Text` 台词或情景；中段才上 `MathTex` 主推导。
+
 ## 三态
 
 | 状态 | 处理 |
@@ -15,18 +25,18 @@
 
 ## 锚定与 VGroup
 
-- 讲稿名词用 SurroundingRectangle/Circle 锚定。
+- 讲稿名词用 SurroundingRectangle/Circle 锚定（包整式，禁止 `get_part_by_tex` / `mobject[i]`）。
 - 相关对象进同一 VGroup，整体移动/缩放。
 
 ## 模块化
 
 ```python
 def construct(self):
-    self.setup_phase()
+    self.setup_phase()       # 开场剧情
     self.clear_board()
-    self.derivation_phase()
+    self.derivation_phase()  # 知识点
     self.clear_board()
-    self.conclusion_phase()
+    self.conclusion_phase()  # 收束剧情
     self.load_and_play_narration()
     self.pad_to_narration_length()
 ```

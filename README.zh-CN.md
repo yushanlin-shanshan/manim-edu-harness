@@ -2,7 +2,7 @@
 
 [English](README.md) | 中文
 
-一句话 / 批量的 **Multi-Agent Harness**：把理科知识点做成「短剧式」讲解，并生成 **ManimCommunity** 场景代码。流程对齐 [Adversarial_harness](https://github.com/BlerTNN/Adversarial_harness)（隔离候选区 → 确定性验收 → Review → 仅 PASS 提升），并结合 2026 Manim 教学视频开源调研中的实践（先规划再写码、写码+审查循环、渲染作为硬门禁）。
+一句话 / 批量的 **Multi-Agent Harness**：把理科知识点做成「短剧剧情→知识点→短剧剧情」三明治短视频，并生成 **ManimCommunity** 场景代码。流程对齐 [Adversarial_harness](https://github.com/BlerTNN/Adversarial_harness)（隔离候选区 → 确定性验收 → Review → 仅 PASS 提升），并结合 2026 Manim 教学视频开源调研中的实践（先规划再写码、写码+审查循环、渲染作为硬门禁）。
 
 ```text
 主题 / 批量队列

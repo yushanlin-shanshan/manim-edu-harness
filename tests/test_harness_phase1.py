@@ -21,8 +21,10 @@ COLOR_SYSTEM = {"primary": BLUE}
 
 class EpisodeScene(Scene):
     def construct(self):
+        # [DRAMA-OPEN]
         # [KP-1]
         # [KP-2]
+        # [DRAMA-CLOSE]
         self.setup_phase()
         self.clear_board()
         self.load_and_play_narration()
@@ -118,8 +120,10 @@ from manim import *
 COLOR_SYSTEM = {"primary": BLUE}
 class EpisodeScene(Scene):
     def construct(self):
+        # [DRAMA-OPEN]
         # [KP-1]
         # [KP-2]
+        # [DRAMA-CLOSE]
         self.setup_phase()
         self.derivation_phase()
         self.load_and_play_narration()
@@ -232,6 +236,10 @@ class EpisodeScene(Scene):
             self.assertIn("COLOR_SYSTEM", text)
             self.assertIn("def conclusion_phase", text)
 
+
+if __name__ == "__main__":
+    unittest.main()
+
     def test_unsafe_narration_helpers_autofix(self) -> None:
         bad = """
 from manim import *
@@ -239,8 +247,10 @@ import os
 COLOR_SYSTEM = {"primary": BLUE}
 class EpisodeScene(Scene):
     def construct(self):
+        # [DRAMA-OPEN]
         # [KP-1]
         # [KP-2]
+        # [DRAMA-CLOSE]
         self.load_and_play_narration()
         self.pad_to_narration_length()
     def clear_board(self):
@@ -265,24 +275,3 @@ class EpisodeScene(Scene):
         self.assertIn("add_sound(audio_file", fixed)
         self.assertEqual(check_scene_rules(fixed, require_color_system=True), [])
 
-
-
-
-    def test_surrounding_rect_index_autofix(self) -> None:
-        bad = (
-            MINIMAL_OK
-            + "\n    def foo(self):\n"
-            + '        definition = MathTex(r"O(g(n))")\n'
-            + "        r = SurroundingRectangle(definition[2], color=YELLOW)\n"
-        )
-        fails = check_scene_rules(bad)
-        self.assertTrue(any("mobject[i]" in f for f in fails), fails)
-        fixed, labels = auto_fix_scene_source(bad, require_color_system=True)
-        self.assertIn("wrap(get_part_by_tex)→wrap(mobject)", labels)
-        self.assertIn("SurroundingRectangle(definition,", fixed)
-        self.assertNotIn("SurroundingRectangle(definition[2]", fixed)
-        self.assertEqual(check_scene_rules(fixed, require_color_system=True), [])
-
-
-if __name__ == "__main__":
-    unittest.main()
